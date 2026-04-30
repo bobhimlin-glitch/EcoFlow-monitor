@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EcoFlow Monitor">
+<title>EcoFlow Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e2530;
+    --accent: #00e5a0;
+    --accent2: #0099ff;
+    --warn: #ffb800;
+    --danger: #ff4444;
+    --text: #e8edf5;
+    --text2: #6b7a94;
+    --text3: #3d4a5c;
+    --good: #00e5a0;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SETUP SCREEN */
+  #setup-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+    gap: 24px;
+  }
+
+  .setup-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+
+  .setup-logo span { color: var(--text2); font-weight: 400; }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .setup-card h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .setup-card p {
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-group label {
+    color: var(--text2);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  input[type="text"], input[type="password"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+
+  .device-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px;
+    width: 100%;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 8px 14px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MAIN APP */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .header-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+
+  .header-logo span { color: var(--text2); font-weight: 400; }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text3);
+  }
+
+  .status-dot.live {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.error { background: var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .last-update {
+    color: var(--text3);
+    font-size: 11px;
+  }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 10px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 500;
+  }
+
+  /* CONTENT */
+  .content { padding: 16px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+
+  .tab-panel { display: none; flex-direction: column; gap: 16px; }
+  .tab-panel.active { display: flex; }
+
+  /* SUMMARY BAR */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .summary-label {
+    color: var(--text2);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .summary-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .summary-value.good { color: var(--good); }
+  .summary-value.warn { color: var(--warn); }
+  .summary-value.danger { color: var(--danger); }
+
+  .summary-sub { color: var(--text3); font-size: 11px; }
+
+  /* UNIT CARD */
+  .unit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .unit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .unit-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .unit-soc {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  /* SOC BAR */
+  .soc-bar-wrap {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .soc-bar-track {
+    background: var(--border);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .soc-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.8s ease;
+  }
+
+  .soc-row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text2);
+    font-size: 11px;
+  }
+
+  /* BATTERY PACK GRID */
+  .packs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .pack-cell {
+    background: var(--surface);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pack-label {
+    color: var(--text3);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .pack-soc {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .pack-delta {
+    font-size: 11px;
+  }
+
+  .pack-delta.ok { color: var(--good); }
+  .pack-delta.warn { color: var(--warn); }
+  .pack-delta.danger { color: var(--danger); }
+
+  .pack-temps { color: var(--text2); font-size: 10px; }
+
+  /* CELL VOLTAGE SECTION */
+  .section-header {
+    padding: 12px 16px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+  }
+
+  .cell-chart-wrap { padding: 0 16px 14px; }
+
+  /* MINI SPARKLINE */
+  canvas.sparkline {
+    width: 100%;
+    height: 60px;
+    display: block;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+  }
+
+  .stat-cell {
+    background: var(--surface);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-label { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .stat-value.ok { color: var(--good); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.danger { color: var(--danger); }
+
+  /* HISTORY CHART */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .chart-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chart-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 10px;
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  .legend-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .chart-body { padding: 12px 16px 14px; }
+
+  canvas.main-chart {
+    width: 100%;
+    height: 140px;
+    display: block;
+  }
+
+  /* POWER FLOW */
+  .power-flow {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .flow-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .flow-label { color: var(--text2); font-size: 12px; }
+
+  .flow-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .flow-value.in { color: var(--accent); }
+  .flow-value.out { color: var(--accent2); }
+
+  .flow-bar-track {
+    flex: 1;
+    margin: 0 12px;
+    background: var(--border);
+    border-radius: 3px;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .flow-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  .flow-bar-fill.in { background: var(--accent); }
+  .flow-bar-fill.out { background: var(--accent2); }
+
+  /* ERROR BANNER */
+  .error-banner {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-radius: 8px;
+    color: var(--danger);
+    font-size: 12px;
+    padding: 12px 14px;
+    display: none;
+  }
+
+  /* SETTINGS */
+  .settings-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .settings-row:last-child { border-bottom: none; }
+
+  .settings-row-label { color: var(--text2); font-size: 12px; }
+  .settings-row-value { color: var(--text); font-size: 12px; }
+
+  .danger-btn {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-radius: 8px;
+    color: var(--danger);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 16px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* LOADING SKELETON */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* TOOLTIP */
+  .tooltip {
+    position: fixed;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 11px;
+    padding: 6px 10px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+  }
+
+  /* DEMO MODE BADGE */
+  .demo-badge {
+    background: rgba(255, 184, 0, 0.15);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+    border-radius: 4px;
+    color: var(--warn);
+    font-size: 10px;
+    padding: 2px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .interval-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .interval-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .interval-group { display: flex; gap: 4px; }
+
+  /* ALARMS */
+  .alarm-card {
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+  }
+  .alarm-card.warn  { background: rgba(255,184,0,0.1);  border: 1px solid rgba(255,184,0,0.35); }
+  .alarm-card.danger{ background: rgba(255,68,68,0.1);  border: 1px solid rgba(255,68,68,0.35); }
+  .alarm-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alarm-body { flex: 1; }
+  .alarm-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .alarm-title.warn   { color: var(--warn); }
+  .alarm-title.danger { color: var(--danger); }
+  .alarm-detail { color: var(--text2); font-size: 11px; line-height: 1.5; }
+  .alarm-dismiss { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 0; flex-shrink: 0; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .scroll-hint {
+    text-align: center;
+    color: var(--text3);
+    font-size: 10px;
+    padding: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-logo">DELTA<span>/monitor</span></div>
+
+  <div class="setup-card" style="background:rgba(0,229,160,0.05); border-color:rgba(0,229,160,0.25)">
+    <h2 style="color:var(--accent)">Add to Home Screen</h2>
+    <p style="line-height:1.7">In Safari, tap the <strong style="color:var(--text)">Share button ↑</strong> at the bottom of the screen, then tap <strong style="color:var(--text)">Add to Home Screen</strong>. After that it launches like a native app and remembers your credentials.</p>
+  </div>
+
+  <div class="setup-card">
+    <h2>API Credentials</h2>
+    <p>Get your keys from <strong style="color:var(--text)">developer.ecoflow.com</strong> — takes about a week to get approved. Keys are saved in your browser only.</p>
+    <div class="field-group">
+      <label>Access Key</label>
+      <input type="text" id="setup-access-key" placeholder="Your AccessKey" autocomplete="off" autocorrect="off" autocapitalize="off">
+    </div>
+    <div class="field-group">
+      <label>Secret Key</label>
+      <input type="password" id="setup-secret-key" placeholder="Your SecretKey">
+    </div>
+  </div>
+
+  <div class="setup-card">
+    <h2>Your Devices</h2>
+    <p>Serial numbers are in the EcoFlow app → device → settings. Extra battery data is retrieved automatically — no EB serial numbers needed.</p>
+
+    <div class="field-group">
+      <label>Delta Pro 1 — Serial Number</label>
+      <input type="text" id="dp1-sn" placeholder="DP1 serial number" autocorrect="off" autocapitalize="off">
+    </div>
+    <div class="field-group" style="margin-top:8px">
+      <label>Delta Pro 2 — Serial Number</label>
+      <input type="text" id="dp2-sn" placeholder="DP2 serial number" autocorrect="off" autocapitalize="off">
+    </div>
+  </div>
+
+  <div class="setup-card" style="gap:10px">
+    <button class="btn-primary" onclick="saveSetup()">Connect &amp; Launch</button>
+    <button class="btn-secondary" onclick="loadDemo()">Try Demo Mode (no keys needed)</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <div class="header">
+    <div class="header-logo">DELTA<span>/monitor</span></div>
+    <div class="header-right">
+      <span id="demo-badge" class="demo-badge" style="display:none">demo</span>
+      <span class="last-update" id="last-update-time">—</span>
+      <div class="status-dot" id="status-dot"></div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab active" onclick="showTab('overview')">Overview</button>
+    <button class="tab" onclick="showTab('dp1')">DP1 Detail</button>
+    <button class="tab" onclick="showTab('dp2')">DP2 Detail</button>
+    <button class="tab" onclick="showTab('history')">History</button>
+    <button class="tab" onclick="showTab('advisor')">Advisor</button>
+    <button class="tab" onclick="showTab('settings')">Settings</button>
+  </div>
+
+  <div class="content">
+
+    <div id="error-banner" class="error-banner"></div>
+    <div id="alarm-container" style="display:flex;flex-direction:column;gap:8px"></div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-panel active" id="tab-overview">
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">Total Capacity</div>
+          <div class="summary-value" id="ov-total-kwh">—</div>
+          <div class="summary-sub">kWh available</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Avg Cell Δ</div>
+          <div class="summary-value" id="ov-avg-delta">—</div>
+          <div class="summary-sub">mV spread</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Input</div>
+          <div class="summary-value in" id="ov-total-in">—</div>
+          <div class="summary-sub">watts charging</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Output</div>
+          <div class="summary-value" id="ov-total-out">—</div>
+          <div class="summary-sub">watts load</div>
+        </div>
+      </div>
+
+      <!-- DP1 Summary -->
+      <div class="unit-card" onclick="showTab('dp1')" style="cursor:pointer">
+        <div class="unit-header">
+          <div class="unit-name">Delta Pro 1 ›</div>
+          <div class="unit-soc" id="ov-dp1-soc">—%</div>
+        </div>
+        <div class="soc-bar-wrap">
+          <div class="soc-bar-track"><div class="soc-bar-fill" id="ov-dp1-bar" style="width:0%"></div></div>
+          <div class="soc-row">
+            <span id="ov-dp1-remain">— Wh remain</span>
+            <span id="ov-dp1-time">— hrs</span>
+          </div>
+        </div>
+        <div class="packs-grid">
+          <div class="pack-cell">
+            <div class="pack-label">Main</div>
+            <div class="pack-soc" id="ov-dp1-main-soc">—%</div>
+            <div class="pack-delta" id="ov-dp1-main-delta">Δ — mV</div>
+            <div class="pack-temps" id="ov-dp1-main-temp">— °C</div>
+          </div>
+          <div class="pack-cell">
+            <div class="pack-label">EB 1A</div>
+            <div class="pack-soc" id="ov-dp1-eb1-soc">—%</div>
+            <div class="pack-delta" id="ov-dp1-eb1-delta">Δ — mV</div>
+            <div class="pack-temps" id="ov-dp1-eb1-temp">— °C</div>
+          </div>
+          <div class="pack-cell">
+            <div class="pack-label">EB 1B</div>
+            <div class="pack-soc" id="ov-dp1-eb2-soc">—%</div>
+            <div class="pack-delta" id="ov-dp1-eb2-delta">Δ — mV</div>
+            <div class="pack-temps" id="ov-dp1-eb2-temp">— °C</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DP2 Summary -->
+      <div class="unit-card" onclick="showTab('dp2')" style="cursor:pointer">
+        <div class="unit-header">
+          <div class="unit-name">Delta Pro 2 ›</div>
+          <div class="unit-soc" id="ov-dp2-soc">—%</div>
+        </div>
+        <div class="soc-bar-wrap">
+          <div class="soc-bar-track"><div class="soc-bar-fill" id="ov-dp2-bar" style="width:0%"></div></div>
+          <div class="soc-row">
+            <span id="ov-dp2-remain">— Wh remain</span>
+            <span id="ov-dp2-time">— hrs</span>
+          </div>
+        </div>
+        <div class="packs-grid">
+          <div class="pack-cell">
+            <div class="pack-label">Main</div>
+            <div class="pack-soc" id="ov-dp2-main-soc">—%</div>
+            <div class="pack-delta" id="ov-dp2-main-delta">Δ — mV</div>
+            <div class="pack-temps" id="ov-dp2-main-temp">— °C</div>
+          </div>
+          <div class="pack-cell">
+            <div class="pack-label">EB 2A</div>
+            <div class="pack-soc" id="ov-dp2-eb1-soc">—%</div>
+            <div class="pack-delta" id="ov-dp2-eb1-delta">Δ — mV</div>
+            <div class="pack-temps" id="ov-dp2-eb1-temp">— °C</div>
+          </div>
+          <div class="pack-cell">
+            <div class="pack-label">EB 2B</div>
+            <div class="pack-soc" id="ov-dp2-eb2-soc">—%</div>
+            <div class="pack-delta" id="ov-dp2-eb2-delta">Δ — mV</div>
+            <div class="pack-temps" id="ov-dp2-eb2-temp">— °C</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll-hint">Pull to refresh • Auto-refreshes every 30s</div>
+    </div>
+
+    <!-- DP1 DETAIL TAB -->
+    <div class="tab-panel" id="tab-dp1">
+      <div id="dp1-detail-content"></div>
+    </div>
+
+    <!-- DP2 DETAIL TAB -->
+    <div class="tab-panel" id="tab-dp2">
+      <div id="dp2-detail-content"></div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div class="tab-panel" id="tab-history">
+
+      <div style="display:flex; align-items:center; justify-content:space-between">
+        <span style="font-family:'Syne',sans-serif; font-weight:700; font-size:13px">Cell Voltage Spread</span>
+        <div class="interval-group">
+          <button class="interval-btn active" onclick="setHistoryRange(1, this)">1D</button>
+          <button class="interval-btn" onclick="setHistoryRange(3, this)">3D</button>
+          <button class="interval-btn" onclick="setHistoryRange(7, this)">7D</button>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Max–Min Cell Δ (mV)</div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#00e5a0"></span>DP1</span>
+            <span><span class="legend-dot" style="background:#0099ff"></span>DP2</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas class="main-chart" id="history-delta-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">State of Charge — All Packs</div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#00e5a0"></span>DP1</span>
+            <span><span class="legend-dot" style="background:#0099ff"></span>DP2</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas class="main-chart" id="history-soc-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Power Flow (W)</div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#00e5a0"></span>In</span>
+            <span><span class="legend-dot" style="background:#0099ff"></span>Out</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas class="main-chart" id="history-power-chart"></canvas>
+        </div>
+      </div>
+
+      <div style="color:var(--text3); font-size:11px; text-align:center; padding:4px">
+        History stored in browser • <span id="history-point-count">0</span> data points
+      </div>
+    </div>
+
+
+    <!-- ADVISOR TAB -->
+    <div class="tab-panel" id="tab-advisor">
+
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent);letter-spacing:-0.3px">DVH Advisor</div>
+      <div style="color:var(--text2);font-size:12px;margin-top:2px">SDG&amp;E TOU-DR1 · DVH leg swap recommendations</div>
+
+      <!-- CURRENT PERIOD BANNER -->
+      <div id="adv-period-banner" style="border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+        <div>
+          <div id="adv-period-label" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700"></div>
+          <div id="adv-period-next" style="font-size:11px;margin-top:2px"></div>
+        </div>
+        <div id="adv-period-icon" style="font-size:28px"></div>
+      </div>
+
+      <!-- RECOMMENDATION CARD -->
+      <div id="adv-rec-card" class="unit-card">
+        <div class="unit-header">
+          <div class="unit-name">Recommendation</div>
+          <div id="adv-rec-badge" style="font-size:11px;padding:3px 10px;border-radius:4px;font-weight:600"></div>
+        </div>
+        <div style="padding:16px">
+          <div id="adv-rec-headline" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1.2;margin-bottom:8px"></div>
+          <div id="adv-rec-reason" style="color:var(--text2);font-size:12px;line-height:1.6"></div>
+        </div>
+      </div>
+
+      <!-- SOC PROJECTION -->
+      <div class="unit-card">
+        <div class="unit-header">
+          <div class="unit-name">SOC at 4pm Projection</div>
+          <div style="font-size:11px;color:var(--text2)" id="adv-proj-updated">—</div>
+        </div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:11px;color:var(--text2)">DP1</span>
+              <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700" id="adv-dp1-proj">—%</span>
+            </div>
+            <div class="soc-bar-track"><div class="soc-bar-fill" id="adv-dp1-proj-bar" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:11px;color:var(--text2)">DP2</span>
+              <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700" id="adv-dp2-proj">—%</span>
+            </div>
+            <div class="soc-bar-track"><div class="soc-bar-fill" id="adv-dp2-proj-bar" style="width:0%;background:var(--accent2)"></div></div>
+          </div>
+          <div id="adv-proj-note" style="font-size:11px;color:var(--text3);padding-top:4px;border-top:1px solid var(--border)"></div>
+        </div>
+      </div>
+
+      <!-- TOU SCHEDULE -->
+      <div class="unit-card">
+        <div class="unit-header">
+          <div class="unit-name">Today's TOU Schedule</div>
+          <div id="adv-weekend-badge" style="font-size:10px;color:var(--text3)"></div>
+        </div>
+        <div id="adv-schedule-bars" style="padding:12px 16px 14px;display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- SOLAR CONTEXT CARD -->
+      <div class="unit-card">
+        <div class="unit-header">
+          <div class="unit-name">Solar Geometry</div>
+          <div id="adv-solar-month" style="font-size:11px;color:var(--text2)"></div>
+        </div>
+        <div style="padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden">
+            <div style="background:var(--surface);padding:10px 12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Sun Alt</div>
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700" id="adv-sun-alt">—°</div>
+            </div>
+            <div style="background:var(--surface);padding:10px 12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Sun Az</div>
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700" id="adv-sun-az">—°</div>
+            </div>
+            <div style="background:var(--surface);padding:10px 12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Sunset</div>
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700" id="adv-sunset">—</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:8px;overflow:hidden">
+            <div style="background:var(--surface);padding:10px 12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">String A:B Now</div>
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent)" id="adv-ratio-now">—x</div>
+            </div>
+            <div style="background:var(--surface);padding:10px 12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">String A:B Daily</div>
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent2)" id="adv-ratio-daily">—x</div>
+            </div>
+          </div>
+          <div id="adv-season-note" style="font-size:11px;color:var(--text2);line-height:1.5;padding:8px;background:var(--surface2);border-radius:6px"></div>
+        </div>
+      </div>
+
+      <div style="color:var(--text3);font-size:10px;text-align:center;padding:4px">
+        Projection blends observed charge rate + solar geometry model · San Diego 32.7°N
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="settings-section">
+        <div class="settings-row">
+          <span class="settings-row-label">API Status</span>
+          <span class="settings-row-value" id="set-api-status">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">DP1 Serial</span>
+          <span class="settings-row-value" id="set-dp1-sn">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">DP2 Serial</span>
+          <span class="settings-row-value" id="set-dp2-sn">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Refresh Interval</span>
+          <span class="settings-row-value">30 seconds</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">History Points</span>
+          <span class="settings-row-value" id="set-history-count">0</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Cell Δ Warn Threshold</span>
+          <span class="settings-row-value">50 mV</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Cell Δ Danger Threshold</span>
+          <span class="settings-row-value">100 mV</span>
+        </div>
+      </div>
+
+      <button class="danger-btn" onclick="clearHistory()">Clear History Data</button>
+      <button class="danger-btn" style="margin-top:8px" onclick="resetApp()">Reset & Re-enter Credentials</button>
+
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;padding:8px 0 4px">Raw API Debug</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:10px;color:var(--text2);line-height:1.6;max-height:300px;overflow-y:auto;word-break:break-all" id="debug-raw">No data yet — connect to see raw API fields</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const WARN_MV = 50;
+const DANGER_MV = 100;
+const REFRESH_MS = 30000;
+const MAX_HISTORY_DAYS = 7;
+const HISTORY_KEY = 'ef_monitor_history_v2';
+const CREDS_KEY = 'ef_monitor_creds_v2';
+
+let config = null;
+let isDemo = false;
+let slaveCache = { dp1s1: null, dp1s2: null, dp2s1: null, dp2s2: null };
+let refreshTimer = null;
+let history = [];
+let historyRangeDays = 1;
+let charts = {};
+
+// ============================================================
+// SETUP
+// ============================================================
+function saveSetup() {
+  const ak = document.getElementById('setup-access-key').value.trim();
+  const sk = document.getElementById('setup-secret-key').value.trim();
+  const dp1 = document.getElementById('dp1-sn').value.trim();
+  const dp1eb1 = '';
+  const dp1eb2 = '';
+  const dp2 = document.getElementById('dp2-sn').value.trim();
+  const dp2eb1 = '';
+  const dp2eb2 = '';
+
+  if (!ak || !sk || !dp1 || !dp2) {
+    alert('Please fill in API keys and at least both Delta Pro serial numbers.');
+    return;
+  }
+
+  config = { ak, sk, dp1, dp1eb1, dp1eb2, dp2, dp2eb1, dp2eb2 };
+  localStorage.setItem(CREDS_KEY, JSON.stringify(config));
+  launchApp();
+}
+
+function loadDemo() {
+  isDemo = true;
+  config = {
+    ak: 'demo', sk: 'demo',
+    dp1: 'DP1-DEMO', dp1eb1: 'EB1A-DEMO', dp1eb2: 'EB1B-DEMO',
+    dp2: 'DP2-DEMO', dp2eb1: 'EB2A-DEMO', dp2eb2: 'EB2B-DEMO'
+  };
+  launchApp();
+}
+
+function launchApp() {
+  requestNotifPermission();
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  if (isDemo) {
+    document.getElementById('demo-badge').style.display = 'inline';
+  }
+
+  updateSettingsDisplay();
+  loadHistory();
+  refresh();
+  refreshTimer = setInterval(refresh, REFRESH_MS);
+}
+
+// ============================================================
+// ECOFLOW API
+// ============================================================
+async function fetchDeviceData(sn) {
+  if (isDemo) return generateDemoData(sn);
+
+  const { ak, sk } = config;
+  const nonce = Math.random().toString(36).substring(2, 10);
+  const timestamp = Date.now().toString();
+
+  // Build signature per EcoFlow API spec
+  const params = { accessKey: ak, nonce, timestamp };
+  const sortedKeys = Object.keys(params).sort();
+  const signStr = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
+  const sign = await hmacSHA256(sk, signStr);
+
+  const url = `https://api.ecoflow.com/iot-open/sign/device/quota/all?sn=${encodeURIComponent(sn)}`;
+
+  const resp = await fetch(url, {
+    headers: {
+      'accessKey': ak,
+      'nonce': nonce,
+      'timestamp': timestamp,
+      'sign': sign,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const json = await resp.json();
+  if (json.code !== '0') throw new Error(json.message || 'API error');
+  return json.data;
+}
+
+async function hmacSHA256(key, message) {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ============================================================
+// DATA PARSING
+// ============================================================
+function parseBmsBlock(raw, prefix) {
+  // Parse a BMS block given a prefix (bmsMaster, bmsSlave1, bmsSlave2)
+  const get = (k, def = 0) => raw[k] !== undefined ? raw[k] : def;
+  const p = prefix + '.';
+
+  // Cell voltages come as comma-separated string e.g. "3363,3366,3368..."
+  // or possibly as an array depending on API version
+  let cellVols = [];
+  try {
+    const cellVolRaw = get(p + 'cellVol', '');
+    if (Array.isArray(cellVolRaw)) {
+      cellVols = cellVolRaw.map(Number).filter(v => v > 0);
+    } else if (cellVolRaw) {
+      cellVols = String(cellVolRaw).split(',').map(Number).filter(v => v > 0);
+    }
+  } catch(e) { cellVols = []; }
+  const minCellVol = cellVols.length ? Math.min(...cellVols) / 1000 : (get(p + 'minCellVol') / 1000);
+  const maxCellVol = cellVols.length ? Math.max(...cellVols) / 1000 : (get(p + 'maxCellVol') / 1000);
+
+  // Cell temps come as comma-separated string e.g. "26,26,27,26"
+  let cellTemps = [];
+  try {
+    const cellTempRaw = get(p + 'cellTemp', '');
+    if (Array.isArray(cellTempRaw)) {
+      cellTemps = cellTempRaw.map(Number).filter(v => v > 0);
+    } else if (cellTempRaw) {
+      cellTemps = String(cellTempRaw).split(',').map(Number).filter(v => v > 0);
+    }
+  } catch(e) { cellTemps = []; }
+  const minCellTemp = cellTemps.length ? Math.min(...cellTemps) : get(p + 'minCellTemp');
+  const maxCellTemp = cellTemps.length ? Math.max(...cellTemps) : get(p + 'maxCellTemp');
+
+  return {
+    soc: get(p + 'f32ShowSoc', get(p + 'actSoc', get(p + 'soc'))),
+    minCellVol,
+    maxCellVol,
+    cellVols,           // full array for future use
+    minCellTemp,
+    maxCellTemp,
+    remainCap: get(p + 'remainCap'),
+    fullCap: get(p + 'fullCap'),
+    cycles: get(p + 'cycles'),
+    inputW: get(p + 'inputWatts'),
+    outputW: get(p + 'outputWatts'),
+    vol: get(p + 'vol') / 1000,    // mV -> V
+    amp: get(p + 'amp') / 1000,    // mA -> A
+    balanceState: get(p + 'balanceState'),
+    maxVolDiff: get(p + 'maxVolDiff'),  // raw mV spread from BMS
+    soh: get(p + 'soh'),
+    num: get(p + 'num'),            // slot number (0=master, 1=slave1, 2=slave2)
+  };
+}
+
+function parseDeviceQuota(raw) {
+  // Field reference confirmed from real Delta Pro API response:
+  // Main unit BMS:  bmsMaster.*
+  // Extra Battery 1: bmsSlave1.*
+  // Extra Battery 2: bmsSlave2.*  (if present)
+  // EMS (system):  ems.*
+  // Inverter:      inv.*
+  // PD (power delivery): pd.*
+  // MPPT (solar):  mppt.*
+  //
+  // Key scaling:
+  // *.cellVol -> comma-separated mV integers -> divide by 1000 for V
+  // *.vol     -> pack voltage in mV -> divide by 1000
+  // *.amp     -> milliamps -> divide by 1000
+  // mppt.inWatts -> tenths of watts -> divide by 10
+  // mppt.inVol   -> tenths of volts -> divide by 10
+  // mppt.inAmp   -> milliamps -> divide by 1000
+  // pd.wattsInSum / wattsOutSum -> direct watts
+  // inv.inputWatts / outputWatts -> direct watts
+  // inv.acInVol / acOutVol -> millivolts -> divide by 1000
+  // ems.f32LcdShowSoc -> display SOC float %
+
+  const get = (k, def = 0) => raw[k] !== undefined ? raw[k] : def;
+
+  // Parse each BMS block independently
+  const master = parseBmsBlock(raw, 'bmsMaster');
+  // Detect slaves by checking multiple possible fields
+  const hasSlave1 = raw['bmsSlave1.soc'] !== undefined || raw['bmsSlave1.actSoc'] !== undefined || raw['bmsSlave1.f32ShowSoc'] !== undefined;
+  const hasSlave2 = raw['bmsSlave2.soc'] !== undefined || raw['bmsSlave2.actSoc'] !== undefined || raw['bmsSlave2.f32ShowSoc'] !== undefined;
+  let slave1 = null, slave2 = null;
+  try { slave1 = hasSlave1 ? parseBmsBlock(raw, 'bmsSlave1') : null; } catch(e) { console.error('slave1 parse error:', e); }
+  try { slave2 = hasSlave2 ? parseBmsBlock(raw, 'bmsSlave2') : null; } catch(e) { console.error('slave2 parse error:', e); }
+  console.log('BMS slaves detected - slave1:', !!slave1, 'slave2:', !!slave2, 'hasSlave2:', hasSlave2);
+
+  // System display SOC from EMS
+  const displaySoc = get('ems.f32LcdShowSoc', get('ems.lcdShowSoc', master.soc));
+
+  // Use master block as primary bms object, but expose slaves separately
+  const bms = {
+    ...master,
+    soc: displaySoc,    // system display SOC
+    slave1,
+    slave2,
+  };
+
+  const inv = {
+    inputW: get('inv.inputWatts'),
+    outputW: get('inv.outputWatts'),
+    acInVol: get('inv.acInVol') / 1000,
+    acOutVol: get('inv.acOutVol') / 1000,
+    outVol: get('inv.invOutVol') / 1000,
+  };
+
+  const pd = {
+    remainTime: get('pd.remainTime'),
+    soc: get('pd.soc'),
+    wattsInSum: get('pd.wattsInSum'),   // direct watts
+    wattsOutSum: get('pd.wattsOutSum'), // direct watts
+    chgRemainTime: get('ems.chgRemainTime'),
+    dsgRemainTime: get('ems.dsgRemainTime'),
+  };
+
+  const mppt = {
+    inVol: get('mppt.inVol') / 10,      // tenths of volts -> V
+    inAmp: get('mppt.inAmp') / 1000,    // mA -> A
+    inWatts: get('mppt.inWatts') / 10,  // tenths of watts -> W
+    outVol: get('mppt.outVol') / 10,
+    outAmp: get('mppt.outAmp') / 1000,
+    outWatts: get('mppt.outWatts') / 10,
+    carOutWatts: get('mppt.carOutWatts') / 10,
+    mpptTemp: get('mppt.mpptTemp'),
+  };
+
+  // Cell delta from master block (primary health indicator)
+  const deltaVoltMv = Math.round((master.maxCellVol - master.minCellVol) * 1000);
+
+  return { bms, inv, pd, mppt, deltaVoltMv, master, slave1, slave2, raw };
+}
+
+// ============================================================
+// DEMO DATA GENERATOR
+// ============================================================
+let demoTick = 0;
+function generateDemoData(sn) {
+  demoTick++;
+  const t = demoTick * 0.05;
+  const isDp1 = sn.includes('DP1');
+  const baseSoc = isDp1 ? 78 : 62;
+  const soc = Math.max(5, Math.min(99, baseSoc + Math.sin(t * 0.3) * 8));
+  const minV = 3.28 + Math.sin(t * 0.1) * 0.005;
+  const maxV = minV + (isDp1 ? 0.018 : 0.045) + Math.abs(Math.sin(t * 0.07)) * 0.015;
+
+  return {
+    'bms_bmsStatus.f32ShowSoc': soc,
+    'bms_bmsStatus.minCellVol': Math.round(minV * 1000),
+    'bms_bmsStatus.maxCellVol': Math.round(maxV * 1000),
+    'bms_bmsStatus.minCellTemp': 26,
+    'bms_bmsStatus.maxCellTemp': 29 + Math.sin(t * 0.2) * 2,
+    'bms_bmsStatus.remainCap': Math.round(soc * 360),
+    'bms_bmsStatus.fullCap': 36000,
+    'bms_bmsStatus.cycles': isDp1 ? 47 : 52,
+    'bms_bmsStatus.inputWatts': Math.round((isDp1 ? 3200 : 0) + Math.sin(t * 0.4) * 200),
+    'bms_bmsStatus.outputWatts': Math.round(4500 + Math.sin(t * 0.3) * 800),
+    'bms_bmsStatus.vol': 53400 + Math.sin(t * 0.1) * 100,
+    'bms_bmsStatus.amp': isDp1 ? -600 : 400,
+    'bms_bmsStatus.balanceState': 0,
+    'inv.inputWatts': 0,
+    'inv.outputWatts': Math.round(4500 + Math.sin(t * 0.3) * 800),
+    'inv.acInVol': 0,
+    'inv.acOutVol': 1200000,
+    'pd.remainTime': Math.round(soc * 1.8),
+    'pd.soc': soc,
+    'pd.wattsInSum': isDp1 ? Math.round(3200 + Math.sin(t * 0.4) * 200) : 0,
+    'pd.wattsOutSum': Math.round(4500 + Math.sin(t * 0.3) * 800),
+    'mppt.inVol': isDp1 ? 980 : 0,
+    'mppt.inAmp': isDp1 ? 320 : 0,
+    'mppt.inWatts': isDp1 ? Math.round(3100 + Math.sin(t * 0.4) * 150) : 0,
+    'mppt.outWatts': 0,
+    'mppt.carOutWatts': 0,
+  };
+}
+
+// ============================================================
+// MAIN REFRESH
+// ============================================================
+async function refresh() {
+  const dot = document.getElementById('status-dot');
+
+  try {
+    // EBs come in the same response as the main DP (bmsSlave1, bmsSlave2)
+    // Only need to query the two main DP serial numbers
+    const [dp1raw, dp2raw] = await Promise.all([
+      fetchDeviceData(config.dp1),
+      fetchDeviceData(config.dp2)
+    ]);
+
+    const dp1parsed = dp1raw ? parseDeviceQuota(dp1raw) : null;
+    const dp2parsed = dp2raw ? parseDeviceQuota(dp2raw) : null;
+
+    // Build packs object — EBs come from slave blocks within each DP response
+    // API alternates which slave it returns per poll, so we cache last known data
+    function slaveAsPack(slave) {
+      if (!slave) return null;
+      try {
+        const minV = slave.minCellVol || 0;
+        const maxV = slave.maxCellVol || 0;
+        return {
+          bms: { ...slave, soc: slave.soc, cellVols: slave.cellVols || [] },
+          deltaVoltMv: Math.round((maxV - minV) * 1000),
+          pd: { soc: slave.soc, wattsInSum: 0, wattsOutSum: 0, remainTime: slave.remainTime || 0 },
+          mppt: { inWatts: 0 },
+          inv: { outputW: 0 },
+        };
+      } catch(e) { console.error('slaveAsPack error:', e); return null; }
+    }
+
+    // Update cache with fresh data, keep stale if new is null
+    if (dp1parsed) {
+      if (dp1parsed.slave1) slaveCache.dp1s1 = slaveAsPack(dp1parsed.slave1);
+      if (dp1parsed.slave2) slaveCache.dp1s2 = slaveAsPack(dp1parsed.slave2);
+    }
+    if (dp2parsed) {
+      if (dp2parsed.slave1) slaveCache.dp2s1 = slaveAsPack(dp2parsed.slave1);
+      if (dp2parsed.slave2) slaveCache.dp2s2 = slaveAsPack(dp2parsed.slave2);
+    }
+
+    const packs = {
+      dp1:    dp1parsed,
+      dp1eb1: slaveCache.dp1s1,
+      dp1eb2: slaveCache.dp1s2,
+      dp2:    dp2parsed,
+      dp2eb1: slaveCache.dp2s1,
+      dp2eb2: slaveCache.dp2s2,
+    };
+
+    updateOverview(packs);
+    updateDetailTab('dp1', packs.dp1, packs.dp1eb1, packs.dp1eb2);
+    updateDetailTab('dp2', packs.dp2, packs.dp2eb1, packs.dp2eb2);
+
+    const dp1Deltas = [packs.dp1, packs.dp1eb1, packs.dp1eb2].filter(Boolean).map(p => p.deltaVoltMv);
+    const dp2Deltas = [packs.dp2, packs.dp2eb1, packs.dp2eb2].filter(Boolean).map(p => p.deltaVoltMv);
+
+    const point = {
+      ts: Date.now(),
+      dp1Soc: packs.dp1 ? systemSoc(packs.dp1, packs.dp1eb1, packs.dp1eb2) : 0,
+      dp2Soc: packs.dp2 ? systemSoc(packs.dp2, packs.dp2eb1, packs.dp2eb2) : 0,
+      dp1Delta: Math.max(...dp1Deltas),
+      dp2Delta: Math.max(...dp2Deltas),
+      inW: (packs.dp1 && packs.dp1.pd.wattsInSum || 0) + (packs.dp2 && packs.dp2.pd.wattsInSum || 0),
+      outW: (packs.dp1 && packs.dp1.pd.wattsOutSum || 0) + (packs.dp2 && packs.dp2.pd.wattsOutSum || 0),
+    };
+    pushSocSnapshot(point.dp1Soc, point.dp2Soc,
+      packs.dp1 ? { main: packs.dp1, eb1: packs.dp1eb1, eb2: packs.dp1eb2 } : null,
+      packs.dp2 ? { main: packs.dp2, eb1: packs.dp2eb1, eb2: packs.dp2eb2 } : null
+    );
+    addHistoryPoint(point);
+    checkAlarms(packs);
+    renderHistoryCharts();
+
+    dot.className = 'status-dot live';
+    document.getElementById('last-update-time').textContent = fmtTime(new Date());
+    document.getElementById('error-banner').style.display = 'none';
+    if (document.getElementById('tab-advisor').classList.contains('active')) updateAdvisor();
+    // Update raw debug panel — show only key diagnostic fields
+    const debugEl = document.getElementById('debug-raw');
+    if (debugEl && packs.dp1) {
+      const r = packs.dp1.raw;
+      const watchFields = [
+        'ems.f32LcdShowSoc',
+        'ems.lcdShowSoc',
+        'bmsMaster.f32ShowSoc',
+        'bmsMaster.soc',
+        'bmsMaster.cellVol',
+        'bmsMaster.minCellVol',
+        'bmsMaster.maxCellVol',
+        'bmsMaster.maxVolDiff',
+        'bmsMaster.cellTemp',
+        'bmsMaster.cycles',
+        'bmsMaster.vol',
+        'bmsMaster.amp',
+        'bmsSlave1.f32ShowSoc',
+        'bmsSlave1.cellVol',
+        'bmsSlave1.maxVolDiff',
+        'bmsSlave1.cycles',
+        'bmsSlave2.f32ShowSoc',
+        'bmsSlave2.actSoc',
+        'bmsSlave2.soc',
+        'bmsSlave2.cellVol',
+        'bmsSlave2.maxVolDiff',
+        'bmsSlave2.cycles',
+        'bmsMaster.outputWatts',
+        'bmsMaster.inputWatts',
+        'bmsSlave1.outputWatts',
+        'bmsSlave1.inputWatts',
+        'bmsSlave2.outputWatts',
+        'bmsSlave2.inputWatts',
+        'pd.wattsInSum',
+        'pd.wattsOutSum',
+        'pd.remainTime',
+        'ems.chgRemainTime',
+        'ems.dsgRemainTime',
+        'mppt.inWatts',
+        'mppt.inVol',
+        'mppt.inAmp',
+        'inv.inputWatts',
+        'inv.outputWatts',
+        'inv.invOutVol',
+      ];
+      debugEl.innerHTML = '<strong style="color:var(--accent)">DP1 Key Fields:</strong><br><br>' +
+        watchFields.map(k => {
+          const val = r[k];
+          const found = val !== undefined;
+          return `<span style="color:${found ? 'var(--text2)' : 'var(--text3)'}">${k}:</span> <span style="color:${found ? 'var(--accent)' : 'var(--danger)'}">${found ? val : 'MISSING'}</span>`;
+        }).join('<br>');
+    }
+
+  } catch (err) {
+    dot.className = 'status-dot error';
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'block';
+    banner.textContent = `Error fetching data: ${err.message}`;
+    console.error(err);
+  }
+}
+
+// ============================================================
+// UI UPDATES - OVERVIEW
+// ============================================================
+function systemSoc(mainPack, eb1, eb2) {
+  // Capacity-weighted average across all present packs (each 3600Wh = equal weight)
+  // For main pack use bms.soc (display SOC from EMS)
+  // For slave packs use bms.soc (f32ShowSoc from that slave's BMS)
+  const packs = [mainPack, eb1, eb2].filter(Boolean);
+  if (!packs.length) return 0;
+  const socVals = packs.map(p => parseFloat(p.bms.soc) || 0);
+  return Math.round(socVals.reduce((a, b) => a + b, 0) / socVals.length);
+}
+
+function systemWhRemain(sysSOC, packCount) {
+  return Math.round(sysSOC / 100 * 3600 * packCount);
+}
+
+function systemTimeRemain(whRemain, outW) {
+  // hrs = Wh / W, only meaningful if discharging
+  if (!outW || outW <= 0) return null;
+  return whRemain / outW;
+}
+
+function updateOverview(packs) {
+  const dp1 = packs.dp1;
+  const dp2 = packs.dp2;
+  if (!dp1 || !dp2) return;
+
+  // System SOC = capacity-weighted average of all packs per unit
+  const dp1PackCount = [packs.dp1, packs.dp1eb1, packs.dp1eb2].filter(Boolean).length;
+  const dp2PackCount = [packs.dp2, packs.dp2eb1, packs.dp2eb2].filter(Boolean).length;
+
+  const dp1SysSoc = systemSoc(packs.dp1, packs.dp1eb1, packs.dp1eb2);
+  const dp2SysSoc = systemSoc(packs.dp2, packs.dp2eb1, packs.dp2eb2);
+
+  const dp1Wh = systemWhRemain(dp1SysSoc, dp1PackCount);
+  const dp2Wh = systemWhRemain(dp2SysSoc, dp2PackCount);
+  const totalKwh = ((dp1Wh + dp2Wh) / 1000).toFixed(1);
+
+  // System-level output watts for time estimates
+  const dp1OutW = Math.round(dp1.pd.wattsOutSum || dp1.inv.outputW || 0);
+  const dp2OutW = Math.round(dp2.pd.wattsOutSum || dp2.inv.outputW || 0);
+
+  const dp1TimeH = systemTimeRemain(dp1Wh, dp1OutW);
+  const dp2TimeH = systemTimeRemain(dp2Wh, dp2OutW);
+  const fmtHrs = h => h === null ? '—' : h > 99 ? '>99 hrs' : h.toFixed(1) + ' hrs est';
+
+  // Worst-case cell delta across all 6 packs
+  const allDeltas = [packs.dp1, packs.dp1eb1, packs.dp1eb2, packs.dp2, packs.dp2eb1, packs.dp2eb2]
+    .filter(Boolean).map(p => p.deltaVoltMv);
+  const worstDelta = Math.max(...allDeltas);
+
+  setText('ov-total-kwh', totalKwh);
+  setValColor('ov-avg-delta', worstDelta + '', worstDelta, WARN_MV, DANGER_MV);
+  setText('ov-total-in', Math.round((dp1.pd.wattsInSum || 0) + (dp2.pd.wattsInSum || 0)) + '');
+  setText('ov-total-out', Math.round(dp1OutW + dp2OutW) + '');
+
+  // DP1 system SOC
+  setText('ov-dp1-soc', dp1SysSoc + '%');
+  setWidth('ov-dp1-bar', dp1SysSoc);
+  setText('ov-dp1-remain', dp1Wh.toLocaleString() + ' Wh remain');
+  setText('ov-dp1-time', fmtHrs(dp1TimeH));
+  setPackCell('ov-dp1-main', Math.round(dp1.bms.soc), dp1.deltaVoltMv, dp1.bms.minCellTemp, dp1.bms.maxCellTemp);
+  if (packs.dp1eb1) setPackCell('ov-dp1-eb1', Math.round(packs.dp1eb1.bms.soc), packs.dp1eb1.deltaVoltMv, packs.dp1eb1.bms.minCellTemp, packs.dp1eb1.bms.maxCellTemp);
+  if (packs.dp1eb2) setPackCell('ov-dp1-eb2', Math.round(packs.dp1eb2.bms.soc), packs.dp1eb2.deltaVoltMv, packs.dp1eb2.bms.minCellTemp, packs.dp1eb2.bms.maxCellTemp);
+
+  // DP2 system SOC
+  setText('ov-dp2-soc', dp2SysSoc + '%');
+  setWidth('ov-dp2-bar', dp2SysSoc);
+  setText('ov-dp2-remain', dp2Wh.toLocaleString() + ' Wh remain');
+  setText('ov-dp2-time', fmtHrs(dp2TimeH));
+  setPackCell('ov-dp2-main', Math.round(dp2.bms.soc), dp2.deltaVoltMv, dp2.bms.minCellTemp, dp2.bms.maxCellTemp);
+  if (packs.dp2eb1) setPackCell('ov-dp2-eb1', Math.round(packs.dp2eb1.bms.soc), packs.dp2eb1.deltaVoltMv, packs.dp2eb1.bms.minCellTemp, packs.dp2eb1.bms.maxCellTemp);
+  if (packs.dp2eb2) setPackCell('ov-dp2-eb2', Math.round(packs.dp2eb2.bms.soc), packs.dp2eb2.deltaVoltMv, packs.dp2eb2.bms.minCellTemp, packs.dp2eb2.bms.maxCellTemp);
+}
+
+function setPackCell(prefix, soc, deltaMv, minT, maxT) {
+  setText(prefix + '-soc', Math.round(soc) + '%');
+  const el = document.getElementById(prefix + '-delta');
+  if (el) {
+    el.textContent = 'Δ ' + deltaMv + ' mV';
+    el.className = 'pack-delta ' + deltaClass(deltaMv);
+  }
+  setText(prefix + '-temp', minT + '–' + Math.round(maxT) + ' °C');
+}
+
+// ============================================================
+// UI UPDATES - DETAIL TAB
+// ============================================================
+function renderCellVoltageBar(cellVols) {
+  if (!cellVols || !cellVols.length) return '';
+  const minV = Math.min(...cellVols);
+  const maxV = Math.max(...cellVols);
+  const range = maxV - minV || 1;
+  const bars = cellVols.map((v, i) => {
+    const pct = ((v - minV) / range) * 100;
+    const color = pct > 80 ? 'var(--warn)' : pct < 20 ? 'var(--accent2)' : 'var(--accent)';
+    const h = 20 + ((v - 3200) / (3700 - 3200)) * 80;
+    return `<div title="Cell ${i+1}: ${(v/1000).toFixed(3)}V" style="flex:1;background:${color};height:${Math.max(8,Math.min(100,h))}%;border-radius:2px 2px 0 0;opacity:0.85"></div>`;
+  }).join('');
+  return `
+    <div style="padding:8px 14px 12px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">${cellVols.length} Cells</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:40px">${bars}</div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px">
+        <span>Min ${(minV/1000).toFixed(3)}V</span><span>Δ${maxV-minV}mV</span><span>Max ${(maxV/1000).toFixed(3)}V</span>
+      </div>
+    </div>`;
+}
+
+function packHealthCard(label, pack) {
+  if (!pack) return '';
+  const dc = deltaClass(pack.deltaVoltMv);
+  const cellVols = pack.bms.cellVols || [];
+  const soc = Math.round(parseFloat(pack.bms.soc));
+  return `
+    <div class="unit-card" style="margin-bottom:0">
+      <div class="unit-header" style="padding:10px 14px">
+        <div class="unit-name" style="font-size:13px">${label}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:var(--text2)">${pack.bms.cycles} cycles${pack.bms.soh ? ' · SOH ' + pack.bms.soh + '%' : ''}</span>
+          <div class="unit-soc" style="font-size:16px">${soc}%</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-label">Cell Δ</div>
+          <div class="stat-value ${dc}">${pack.deltaVoltMv} mV</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Min V</div>
+          <div class="stat-value">${pack.bms.minCellVol.toFixed(3)}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Max V</div>
+          <div class="stat-value">${pack.bms.maxCellVol.toFixed(3)}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Temp Lo</div>
+          <div class="stat-value">${pack.bms.minCellTemp}°C</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Temp Hi</div>
+          <div class="stat-value ${pack.bms.maxCellTemp > 40 ? 'warn' : 'ok'}">${Math.round(pack.bms.maxCellTemp)}°C</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Status</div>
+          <div class="stat-value ${dc}">${dc === 'ok' ? 'GOOD' : dc === 'warn' ? 'WATCH' : 'ALERT'}</div>
+        </div>
+      </div>
+      ${cellVols.length ? renderCellVoltageBar(cellVols) : ''}
+      <div style="padding:10px 14px 12px">
+        ${renderBalanceGauge(pack.deltaVoltMv)}
+      </div>
+    </div>`;
+}
+
+
+function updateDetailTab(which, main, eb1, eb2) {
+  const container = document.getElementById(which + '-detail-content');
+  if (!main) { container.innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center">No data</div>'; return; }
+
+  const label = which === 'dp1' ? 'Delta Pro 1' : 'Delta Pro 2';
+  // System SOC = capacity-weighted average of all packs present
+  const packCount = [main, eb1, eb2].filter(Boolean).length;
+  const sysSoc = systemSoc(main, eb1, eb2);
+  const sysWh = systemWhRemain(sysSoc, packCount);
+  const inW = Math.round(main.pd.wattsInSum || main.mppt.inWatts || 0);
+  const outW = Math.round(main.pd.wattsOutSum || main.inv.outputW || 0);
+  const timeH = systemTimeRemain(sysWh, outW);
+  const fmtHrs = h => h === null ? '—' : h > 99 ? '>99 hrs' : h.toFixed(1) + ' hrs est';
+  const maxIn = 6500;
+  const maxOut = 3600;
+
+  // Determine input source for contextual labeling
+  const solarW = Math.round(main.mppt.inWatts || 0);
+  const gridW = Math.round(main.inv.inputW || 0);
+  const isSolar = solarW > 50;
+  const isGrid = gridW > 50;
+  const isNight = !isSolar && !isGrid;
+  const inputLabel = isSolar ? 'Solar In' : isGrid ? 'Grid AC In' : 'EB Discharge In';
+  const inputColor = isGrid ? 'var(--warn)' : 'var(--accent)';
+
+  // AC inverter output (Infinity Port + direct AC outlets)
+  const acOutW = Math.round(main.inv.outputW || outW);
+  // EB charging current from slave inputWatts
+  const slave1ChargeW = eb1 ? Math.round(eb1.bms.inputW || 0) : 0;
+  const slave2ChargeW = eb2 ? Math.round(eb2.bms.inputW || 0) : 0;
+  const ebChargeW = slave1ChargeW + slave2ChargeW;
+  // Total pack discharge = sum of all pack outputWatts (includes DP overhead + inverter + house load)
+  const masterDsg = Math.round(main.master ? (main.master.outputW || 0) : (main.bms.outputW || 0));
+  const slave1Dsg = eb1 ? Math.round(eb1.bms.outputW || 0) : 0;
+  const slave2Dsg = eb2 ? Math.round(eb2.bms.outputW || 0) : 0;
+  const totalPackDsg = masterDsg + slave1Dsg + slave2Dsg;
+  const parasitic = totalPackDsg > (acOutW + ebChargeW) ? totalPackDsg - acOutW - ebChargeW : 0;
+
+  container.innerHTML = `
+    <div class="unit-card">
+      <div class="unit-header">
+        <div class="unit-name">${label}</div>
+        <div class="unit-soc">${sysSoc}%</div>
+      </div>
+      <div class="soc-bar-wrap">
+        <div class="soc-bar-track"><div class="soc-bar-fill" style="width:${sysSoc}%"></div></div>
+        <div class="soc-row">
+          <span>${sysWh.toLocaleString()} Wh remain (${packCount} packs)</span>
+          <span>${fmtHrs(timeH)}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="power-flow">
+      <div class="flow-title">Power Flow</div>
+      <div class="flow-row">
+        <span class="flow-label" style="color:${inputColor}">${inputLabel}</span>
+        <div class="flow-bar-track"><div class="flow-bar-fill in" style="width:${Math.min(100, inW / maxIn * 100)}%;background:${inputColor}"></div></div>
+        <span class="flow-value in" style="color:${inputColor}">${inW}W</span>
+      </div>
+
+      <div class="flow-row">
+        <span class="flow-label">AC Out (Infinity)</span>
+        <div class="flow-bar-track"><div class="flow-bar-fill out" style="width:${Math.min(100, acOutW / maxOut * 100)}%"></div></div>
+        <span class="flow-value out">${acOutW}W</span>
+      </div>
+      ${ebChargeW > 0 ? `
+      <div class="flow-row">
+        <span class="flow-label" style="color:var(--accent2)">EB Charging</span>
+        <div class="flow-bar-track"><div class="flow-bar-fill out" style="width:${Math.min(100, ebChargeW / maxOut * 100)}%;background:var(--accent2)"></div></div>
+        <span class="flow-value" style="color:var(--accent2)">${ebChargeW}W</span>
+      </div>` : ''}
+      ${totalPackDsg > 0 ? `
+      <div class="flow-row">
+        <span class="flow-label" style="color:var(--text2)">Total Pack Draw</span>
+        <div class="flow-bar-track"><div class="flow-bar-fill out" style="width:${Math.min(100, totalPackDsg / maxOut * 100)}%;opacity:0.5"></div></div>
+        <span class="flow-value" style="color:var(--text2)">${totalPackDsg}W</span>
+      </div>
+      ${parasitic > 5 ? `
+      <div style="font-size:10px;color:var(--text3);padding:2px 0 4px">
+        DP overhead ~${parasitic}W (inverter + BMS + WiFi)
+      </div>` : ''}` : ''}
+    </div>
+
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;padding:4px 0 8px">Cell Health — Per Pack</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${packHealthCard('Main Unit', main)}
+      ${packHealthCard('Extra Battery A', eb1)}
+      ${packHealthCard('Extra Battery B', eb2)}
+    </div>
+  `;
+}
+
+
+function renderBalanceGauge(mv) {
+  const pct = Math.min(100, mv / 150 * 100);
+  const color = mv < WARN_MV ? 'var(--good)' : mv < DANGER_MV ? 'var(--warn)' : 'var(--danger)';
+  const label = mv < WARN_MV ? 'HEALTHY' : mv < DANGER_MV ? 'WATCH' : 'ATTENTION';
+  return `
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px">
+      <div style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:${color}">${mv}<span style="font-size:14px; font-weight:400"> mV</span></div>
+      <div style="background:${color}22; border:1px solid ${color}44; border-radius:4px; color:${color}; font-size:11px; padding:3px 8px; font-weight:600">${label}</div>
+    </div>
+    <div style="background:var(--border); border-radius:6px; height:10px; overflow:hidden; position:relative">
+      <div style="background:linear-gradient(90deg, var(--good) 0%, var(--warn) 50%, var(--danger) 80%); height:100%; width:100%; border-radius:6px; opacity:0.3"></div>
+      <div style="position:absolute; top:50%; left:${pct}%; transform:translate(-50%,-50%); width:14px; height:14px; background:${color}; border-radius:50%; border:2px solid var(--bg)"></div>
+    </div>
+  `;
+}
+
+// ============================================================
+// HISTORY
+// ============================================================
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) {
+      history = JSON.parse(raw);
+      pruneHistory();
+    }
+  } catch(e) { history = []; }
+  updateHistoryCounts();
+}
+
+function addHistoryPoint(pt) {
+  history.push(pt);
+  pruneHistory();
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch(e) {}
+  updateHistoryCounts();
+}
+
+function pruneHistory() {
+  const cutoff = Date.now() - MAX_HISTORY_DAYS * 86400000;
+  history = history.filter(p => p.ts > cutoff);
+}
+
+function getFilteredHistory(days) {
+  const cutoff = Date.now() - days * 86400000;
+  return history.filter(p => p.ts > cutoff);
+}
+
+function updateHistoryCounts() {
+  const c = history.length;
+  setText('history-point-count', c);
+  setText('set-history-count', c);
+}
+
+function setHistoryRange(days, btn) {
+  historyRangeDays = days;
+  document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistoryCharts();
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+function renderHistoryCharts() {
+  const pts = getFilteredHistory(historyRangeDays);
+  if (pts.length < 2) return;
+
+  const labels = pts.map(p => fmtTimeShort(new Date(p.ts)));
+  const step = Math.max(1, Math.floor(labels.length / 8));
+  const sparsed = labels.map((l, i) => i % step === 0 ? l : '');
+
+  drawLineChart('history-delta-chart', sparsed,
+    [{ data: pts.map(p => p.dp1Delta), color: '#00e5a0' },
+     { data: pts.map(p => p.dp2Delta), color: '#0099ff' }],
+    'mV');
+
+  drawLineChart('history-soc-chart', sparsed,
+    [{ data: pts.map(p => p.dp1Soc), color: '#00e5a0' },
+     { data: pts.map(p => p.dp2Soc), color: '#0099ff' }],
+    '%', 0, 100);
+
+  drawLineChart('history-power-chart', sparsed,
+    [{ data: pts.map(p => p.inW), color: '#00e5a0' },
+     { data: pts.map(p => p.outW), color: '#0099ff' }],
+    'W');
+}
+
+function drawLineChart(canvasId, labels, series, unit, yMin, yMax) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 140 * dpr;
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = 140;
+  const pad = { top: 10, right: 10, bottom: 24, left: 42 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Find data range
+  const allVals = series.flatMap(s => s.data).filter(v => !isNaN(v));
+  if (!allVals.length) return;
+
+  let minV = yMin !== undefined ? yMin : Math.min(...allVals) * 0.95;
+  let maxV = yMax !== undefined ? yMax : Math.max(...allVals) * 1.05;
+  if (minV === maxV) { minV -= 1; maxV += 1; }
+
+  const xScale = n => pad.left + (n / (labels.length - 1)) * cW;
+  const yScale = v => pad.top + cH - ((v - minV) / (maxV - minV)) * cH;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e2530';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (i / 4) * cH;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+
+    const val = maxV - (i / 4) * (maxV - minV);
+    ctx.fillStyle = '#3d4a5c';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(val), pad.left - 4, y + 3);
+  }
+
+  // X labels
+  ctx.fillStyle = '#3d4a5c';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  labels.forEach((l, i) => {
+    if (l) ctx.fillText(l, xScale(i), H - 6);
+  });
+
+  // Series
+  series.forEach(({ data, color }) => {
+    if (!data.length) return;
+
+    // Fill
+    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
+    grad.addColorStop(0, color + '30');
+    grad.addColorStop(1, color + '00');
+
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = xScale(i), y = yScale(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(xScale(data.length - 1), pad.top + cH);
+    ctx.lineTo(xScale(0), pad.top + cH);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    data.forEach((v, i) => {
+      const x = xScale(i), y = yScale(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.tab');
+  const names = ['overview', 'dp1', 'dp2', 'history', 'advisor', 'settings'];
+  const idx = names.indexOf(name);
+  if (idx >= 0) tabs[idx].classList.add('active');
+
+  if (name === 'history') {
+    setTimeout(renderHistoryCharts, 50);
+  }
+  if (name === 'advisor') {
+    updateAdvisor();
+  }
+}
+
+// ============================================================
+// SETTINGS ACTIONS
+// ============================================================
+function clearHistory() {
+  if (confirm('Clear all stored history data?')) {
+    history = [];
+    localStorage.removeItem(HISTORY_KEY);
+    updateHistoryCounts();
+    renderHistoryCharts();
+  }
+}
+
+
+// ============================================================
+// ADVISOR — DVH swap recommendation engine
+// SDG&E TOU-DR1, baseline assumption: never exceeded
+// ============================================================
+
+let socSnapshots = { dp1: [], dp2: [] };
+
+function getTouPeriod(now) {
+  const h = now.getHours() + now.getMinutes() / 60;
+  const day = now.getDay();
+  const isWeekend = day === 0 || day === 6 || isSdgeHoliday(now);
+  // On-peak always 4pm-9pm
+  if (h >= 16 && h < 21) return 'on-peak';
+  // Super off-peak: weekdays midnight-6am + 10am-2pm; weekends midnight-2pm
+  if (isWeekend) {
+    return h < 14 ? 'super-off-peak' : 'off-peak';
+  } else {
+    if (h < 6) return 'super-off-peak';
+    if (h >= 10 && h < 14) return 'super-off-peak';
+    return 'off-peak';
+  }
+}
+
+function isSdgeHoliday(d) {
+  const m = d.getMonth() + 1, day = d.getDate();
+  const holidays = [[1,1],[1,20],[5,26],[7,4],[9,1],[11,11],[11,27],[12,25]];
+  return holidays.some(([hm, hd]) => m === hm && day === hd);
+}
+
+function getNextTransition(now) {
+  const h = now.getHours() + now.getMinutes() / 60;
+  const day = now.getDay();
+  const isWeekend = day === 0 || day === 6 || isSdgeHoliday(now);
+  const transitions = isWeekend ? [0,14,16,21,24] : [0,6,10,14,16,21,24];
+  const next = transitions.find(t => t > h) || 24;
+  const mins = Math.round((next - h) * 60);
+  const hh = Math.floor(next % 24);
+  const label = `${hh === 0 ? 12 : hh > 12 ? hh-12 : hh}:00 ${hh < 12 || hh === 0 ? 'AM' : 'PM'}`;
+  return { label, mins };
+}
+
+
+// ============================================================
+// SOLAR GEOMETRY ENGINE
+// San Diego: 32.72°N, 117.15°W
+// Panel config:
+//   String A (higher production): 2x NW (315°az) + 1x SW (225°az), tilt 20°
+//   String B (lower production):  2x NW (315°az) + 1x SE (135°az) + Tigo optimizer, tilt 20°
+// ============================================================
+
+const SITE_LAT_RAD = 32.72 * Math.PI / 180;
+const PANEL_TILT = 20 * Math.PI / 180;  // 20° fixed tilt
+const TO_RAD = Math.PI / 180;
+
+// Panel azimuths in degrees (meteorological: 0=N, 90=E, 180=S, 270=W)
+const PANELS = {
+  NW: 315,
+  SW: 225,
+  SE: 135,
+};
+
+// String definitions: [azimuth, weight]
+// String A feeds the higher-production DP (currently config-dependent, but model is symmetric)
+const STRING_A = [ [PANELS.NW, 1], [PANELS.NW, 1], [PANELS.SW, 1] ]; // 2xNW + 1xSW
+const STRING_B = [ [PANELS.NW, 1], [PANELS.NW, 1], [PANELS.SE, 0.85] ]; // 2xNW + 1xSE (Tigo ~15% penalty for mismatch)
+
+function dayOfYear(date) {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date - start;
+  return Math.floor(diff / 86400000);
+}
+
+function solarDeclination(doy) {
+  // Spencer formula
+  const B = (360 / 365) * (doy - 81) * TO_RAD;
+  return (23.45 * Math.sin(B)) * TO_RAD;
+}
+
+function equationOfTime(doy) {
+  // Minutes
+  const B = (360 / 365) * (doy - 81) * TO_RAD;
+  return 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+}
+
+function getSanDiegoUtcOffset(date) {
+  // San Diego is UTC-8 (PST) or UTC-7 (PDT)
+  // DST: second Sunday March to first Sunday November
+  const year = date.getFullYear();
+  // Second Sunday in March
+  const march = new Date(year, 2, 1);
+  const dstStart = new Date(year, 2, 8 + (7 - march.getDay()) % 7); // second Sunday
+  // First Sunday in November
+  const nov = new Date(year, 10, 1);
+  const dstEnd = new Date(year, 10, 1 + (7 - nov.getDay()) % 7); // first Sunday
+  const isDST = date >= dstStart && date < dstEnd;
+  return isDST ? -7 : -8;
+}
+
+function solarPosition(date) {
+  // Returns { altitude, azimuth } in radians
+  // altitude: angle above horizon
+  // azimuth: 0=N, 90=E, 180=S, 270=W (meteorological)
+  const doy = dayOfYear(date);
+  const declination = solarDeclination(doy);
+  const eot = equationOfTime(doy); // minutes
+
+  // Use hardcoded San Diego UTC offset — do NOT use getTimezoneOffset()
+  // which returns 0 in some JS environments (UTC server context)
+  const lonSanDiego = -117.15;
+  const utcOffset = getSanDiegoUtcOffset(date); // -7 PDT or -8 PST
+  const localHour = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  // Solar noon: 12 minus longitude correction minus equation of time
+  // lonCorrection = (longitude - standard_meridian) / 15
+  const stdMeridian = utcOffset * 15; // e.g. -7 * 15 = -105 for PDT
+  const lonCorrection = (lonSanDiego - stdMeridian) / 15;
+  const solarNoon = 12 - lonCorrection - eot / 60;
+  const hourAngle = (localHour - solarNoon) * 15 * TO_RAD; // radians
+
+  // Solar altitude
+  const sinAlt = Math.sin(SITE_LAT_RAD) * Math.sin(declination) +
+                 Math.cos(SITE_LAT_RAD) * Math.cos(declination) * Math.cos(hourAngle);
+  const altitude = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+
+  // Solar azimuth: acos method with correct afternoon/morning flip
+  // 0=N, 90=E, 180=S, 270=W (meteorological convention)
+  const cosAz = (Math.sin(declination) - Math.sin(SITE_LAT_RAD) * sinAlt) /
+                (Math.cos(SITE_LAT_RAD) * Math.cos(altitude));
+  let azDeg = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180 / Math.PI;
+  // In afternoon (hourAngle > 0), sun is west of south: azimuth > 180
+  if (hourAngle > 0) azDeg = 360 - azDeg;
+  const azimuth = azDeg;
+
+  return { altitude, azimuth, altitudeDeg: altitude * 180 / Math.PI, azimuthDeg: azimuth };
+}
+
+function panelIrradiance(sunAlt, sunAzDeg, panelAzDeg) {
+  // Returns 0-1 relative irradiance on a tilted panel
+  // Using dot product of sun vector and panel normal vector
+  if (sunAlt <= 0) return 0;
+
+  const sunAzRad = sunAzDeg * TO_RAD;
+  const panelAzRad = panelAzDeg * TO_RAD;
+
+  // Sun unit vector (pointing from panel toward sun)
+  const sx = Math.cos(sunAlt) * Math.sin(sunAzRad);
+  const sy = Math.cos(sunAlt) * Math.cos(sunAzRad);
+  const sz = Math.sin(sunAlt);
+
+  // Panel normal vector (pointing away from panel surface)
+  // Tilt from horizontal toward azimuth direction
+  const nx = Math.sin(PANEL_TILT) * Math.sin(panelAzRad);
+  const ny = Math.sin(PANEL_TILT) * Math.cos(panelAzRad);
+  const nz = Math.cos(PANEL_TILT);
+
+  // Dot product = cos(angle of incidence)
+  const dot = sx * nx + sy * ny + sz * nz;
+  return Math.max(0, dot);
+}
+
+function stringRelativeOutput(stringDef, date) {
+  // Returns 0-1 relative output for a string at a given time
+  const pos = solarPosition(date);
+  if (pos.altitudeDeg <= 0) return 0;
+
+  let total = 0;
+  let weightSum = 0;
+  stringDef.forEach(([azDeg, weight]) => {
+    total += panelIrradiance(pos.altitude, pos.azimuthDeg, azDeg) * weight;
+    weightSum += weight;
+  });
+  return total / weightSum;
+}
+
+function productionRatio(date) {
+  // Returns ratio of String A to String B production at given time
+  // >1 means String A producing more, <1 means String B producing more
+  const a = stringRelativeOutput(STRING_A, date);
+  const b = stringRelativeOutput(STRING_B, date);
+  if (b < 0.01) return a < 0.01 ? 1 : 99;
+  return a / b;
+}
+
+function integrateProduction(stringDef, date, fromH, toH, steps) {
+  // Numerically integrate production from fromH to toH hours on date
+  const dt = (toH - fromH) / steps;
+  let total = 0;
+  for (let i = 0; i < steps; i++) {
+    const h = fromH + (i + 0.5) * dt;
+    const d = new Date(date);
+    d.setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0);
+    total += stringRelativeOutput(stringDef, d) * dt;
+  }
+  return total;
+}
+
+function getDailyProductionRatio(date) {
+  // Ratio of String A to String B integrated production for the full day
+  const a = integrateProduction(STRING_A, date, 6, 20, 56);
+  const b = integrateProduction(STRING_B, date, 6, 20, 56);
+  if (b < 0.001) return 1;
+  return a / b;
+}
+
+function getRemainingProductionRatio(date) {
+  // From now until sunset — more relevant for afternoon decisions
+  const now = new Date(date);
+  const h = now.getHours() + now.getMinutes() / 60;
+  const sunset = getSunsetHour(date);
+  if (h >= sunset) return 1;
+  const a = integrateProduction(STRING_A, date, h, sunset, Math.ceil((sunset - h) * 8));
+  const b = integrateProduction(STRING_B, date, h, sunset, Math.ceil((sunset - h) * 8));
+  if (b < 0.001) return 1;
+  return a / b;
+}
+
+function getSunsetHour(date) {
+  // Approximate sunset hour for San Diego
+  const doy = dayOfYear(date);
+  const decl = solarDeclination(doy);
+  const cosH = -Math.tan(SITE_LAT_RAD) * Math.tan(decl);
+  if (cosH >= 1) return 12; // no sunrise (polar night, won't happen in SD)
+  if (cosH <= -1) return 20; // no sunset (midnight sun, won't happen in SD)
+  const haSetRad = Math.acos(cosH);
+  const eot = equationOfTime(doy);
+  const lonSanDiego = -117.15;
+  const utcOffset = getSanDiegoUtcOffset(date);
+  const stdMeridian = utcOffset * 15;
+  const lonCorrection = (lonSanDiego - stdMeridian) / 15;
+  const solarNoon = 12 - lonCorrection - eot / 60;
+  return solarNoon + (haSetRad / TO_RAD) / 15;
+}
+
+function getModelOnlyRate(unit, currentSoc, now) {
+  // Pure solar geometry estimate of charge rate (%/hr) assuming clear sky
+  // Used as fallback when observed data is sparse
+  // Calibrated: 3x500W panels at ~20% system efficiency into 10800Wh pack
+  // Peak clear-sky rate ~1.5-2%/hr per panel group
+  const h = now.getHours() + now.getMinutes() / 60;
+  if (h >= 16 || h < 6) return 0;
+
+  const string = unit === 'dp2' ? STRING_A : STRING_B;
+  const nowProd = stringRelativeOutput(string, now);
+
+  // Integrate remaining production to 4pm
+  const steps = Math.max(4, Math.ceil((16 - h) * 4));
+  let futureProdSum = 0;
+  for (let i = 0; i < steps; i++) {
+    const fh = h + (i + 0.5) * ((16 - h) / steps);
+    const fd = new Date(now);
+    fd.setHours(Math.floor(fh), Math.round((fh % 1) * 60), 0, 0);
+    futureProdSum += stringRelativeOutput(string, fd);
+  }
+  const avgFutureProd = futureProdSum / steps;
+
+  // Peak clear-sky rate for this system: ~15%/hr at peak irradiance (empirically calibrated)
+  // Using 3x500W panels, ~10800Wh pack, ~30% combined MPPT+conversion efficiency
+  const PEAK_RATE = 12.0; // %/hr at full irradiance (calibrated: ~940W / 10800Wh pack at noon)
+  return avgFutureProd * PEAK_RATE;
+}
+
+function getProjectedRateWithSolarModel(unit, currentSoc, now) {
+  // Blend observed charge rate with solar geometry model
+  // Returns projected %/hr adjusted for expected production change between now and 4pm
+  const observed = estimateRate(unit);
+  const h = now.getHours() + now.getMinutes() / 60;
+  if (h >= 16) return observed;
+
+  const string = unit === 'dp2' ? STRING_A : STRING_B;
+  const nowProd = stringRelativeOutput(string, now);
+  const steps = Math.max(4, Math.ceil((16 - h) * 4));
+  let futureProdSum = 0;
+  for (let i = 0; i < steps; i++) {
+    const fh = h + (i + 0.5) * ((16 - h) / steps);
+    const fd = new Date(now);
+    fd.setHours(Math.floor(fh), Math.round((fh % 1) * 60), 0, 0);
+    futureProdSum += stringRelativeOutput(string, fd);
+  }
+  const avgFutureProd = futureProdSum / steps;
+  const prodFactor = nowProd > 0.01 ? avgFutureProd / nowProd : 1;
+
+  if (observed !== null && Math.abs(observed) > 0.5) {
+    // Have real data — blend model correction with observed
+    const solarComponent = observed * prodFactor;
+    return solarComponent * 0.7 + observed * 0.3;
+  }
+
+  // No observed data yet — use pure solar geometry model as clear-sky estimate
+  // This gives a reasonable projection immediately on app open
+  const modelRate = getModelOnlyRate(unit, currentSoc, now);
+  return modelRate > 0 ? modelRate : null;
+}
+
+function getSolarContextString(now) {
+  // Human-readable string explaining current solar geometry context
+  const doy = dayOfYear(now);
+  const pos = solarPosition(now);
+  const sunset = getSunsetHour(now);
+  const h = now.getHours() + now.getMinutes() / 60;
+  const ratioAB = productionRatio(now);
+  const dailyRatio = getDailyProductionRatio(now);
+
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const month = monthNames[now.getMonth()];
+
+  let seasonNote = '';
+  if (doy >= 135 && doy <= 228) { // May 15 – Aug 16
+    seasonNote = 'NW panels near peak seasonal output — sun tracking toward northwest at sunset.';
+  } else if (doy >= 319 || doy <= 50) { // Nov 15 – Feb 19
+    seasonNote = 'NW panels at seasonal low — sun arc too far south to hit them well in afternoon.';
+  } else {
+    seasonNote = 'Transitional season — NW panel afternoon production moderate.';
+  }
+
+  const sunsetH = Math.floor(sunset);
+  const sunsetM = Math.round((sunset % 1) * 60);
+  const sunsetH12 = sunsetH > 12 ? sunsetH - 12 : (sunsetH === 0 ? 12 : sunsetH);
+  const sunsetAmPm = sunsetH >= 12 ? 'PM' : 'AM';
+  const sunsetStr = `${sunsetH12}:${sunsetM.toString().padStart(2,'0')} ${sunsetAmPm}`;
+
+  return {
+    altDeg: pos.altitudeDeg.toFixed(1),
+    azDeg: pos.azimuthDeg.toFixed(0),
+    sunsetStr,
+    ratioAB: ratioAB.toFixed(2),
+    dailyRatioAB: dailyRatio.toFixed(2),
+    seasonNote,
+    month,
+  };
+}
+
+// Store last known pack data for rate calculation
+let lastPackData = { dp1: null, dp2: null };
+
+function pushSocSnapshot(dp1Soc, dp2Soc, dp1Packs, dp2Packs) {
+  const ts = Date.now();
+  socSnapshots.dp1.push({ ts, soc: dp1Soc });
+  socSnapshots.dp2.push({ ts, soc: dp2Soc });
+  if (socSnapshots.dp1.length > 30) { socSnapshots.dp1.shift(); socSnapshots.dp2.shift(); }
+  // Store full pack data for direct rate calculation
+  if (dp1Packs) lastPackData.dp1 = dp1Packs;
+  if (dp2Packs) lastPackData.dp2 = dp2Packs;
+}
+
+function packChargeRatePerHr(pack) {
+  // Direct rate from inputWatts: (W / Wh) * 100 = %/hr
+  // Each pack is 3600Wh
+  if (!pack) return 0;
+  const inputW = pack.bms.inputW || 0;
+  const outputW = pack.bms.outputW || 0;
+  const netW = inputW - outputW; // positive = net charging
+  return (netW / 3600) * 100; // %/hr
+}
+
+function estimateRate(unit) {
+  // Primary: use direct inputWatts from pack data — instant, no warmup needed
+  const packData = lastPackData[unit];
+  if (packData) {
+    const main = packData.main;
+    const eb1 = packData.eb1;
+    const eb2 = packData.eb2;
+    const packs = [main, eb1, eb2].filter(Boolean);
+    if (packs.length > 0) {
+      // Total net charge across all packs, averaged for system %/hr
+      const totalNetW = packs.reduce((sum, p) => sum + ((p.bms.inputW || 0) - (p.bms.outputW || 0)), 0);
+      const totalCapWh = packs.length * 3600;
+      const directRate = (totalNetW / totalCapWh) * 100;
+      // Only use direct rate if it's meaningful (> 0.1%/hr change)
+      if (Math.abs(directRate) > 0.1) return directRate;
+    }
+  }
+  // Fallback: SOC drift method (slower but works if inputWatts unavailable)
+  const pts = socSnapshots[unit];
+  if (pts.length < 3) return null;
+  const recent = pts.slice(-6);
+  const dSoc = recent[recent.length-1].soc - recent[0].soc;
+  const dHrs = (recent[recent.length-1].ts - recent[0].ts) / 3600000;
+  if (dHrs < 0.008) return null;
+  return dSoc / dHrs;
+}
+
+function projectAt(currentSoc, ratePerHour, hoursAhead) {
+  if (ratePerHour === null) return null;
+  return Math.max(0, Math.min(100, Math.round(currentSoc + ratePerHour * hoursAhead)));
+}
+
+function buildScheduleBars(now) {
+  const day = now.getDay();
+  const isWeekend = day === 0 || day === 6 || isSdgeHoliday(now);
+  const currentH = now.getHours() + now.getMinutes() / 60;
+
+  // Define segments as [startH, endH, period]
+  const segments = isWeekend ? [
+    [0, 14, 'super-off-peak'],
+    [14, 16, 'off-peak'],
+    [16, 21, 'on-peak'],
+    [21, 24, 'off-peak'],
+  ] : [
+    [0, 6, 'super-off-peak'],
+    [6, 10, 'off-peak'],
+    [10, 14, 'super-off-peak'],
+    [14, 16, 'off-peak'],
+    [16, 21, 'on-peak'],
+    [21, 24, 'off-peak'],
+  ];
+
+  const colors = {
+    'on-peak': '#ff4444',
+    'off-peak': '#ffb800',
+    'super-off-peak': '#00e5a0',
+  };
+  const labels = {
+    'on-peak': 'ON-PEAK',
+    'off-peak': 'OFF-PEAK',
+    'super-off-peak': 'SUPER OFF-PEAK',
+  };
+
+  let html = '<div style="position:relative;height:28px;border-radius:6px;overflow:hidden;background:var(--border)">';
+  segments.forEach(([s, e, period]) => {
+    const left = (s / 24) * 100;
+    const width = ((e - s) / 24) * 100;
+    const color = colors[period];
+    html += `<div style="position:absolute;left:${left}%;width:${width}%;height:100%;background:${color};opacity:0.7" title="${labels[period]} ${s}:00-${e}:00"></div>`;
+  });
+  // Current time needle
+  const needlePct = (currentH / 24) * 100;
+  html += `<div style="position:absolute;left:${needlePct}%;width:2px;height:100%;background:#fff;opacity:0.9"></div>`;
+  html += '</div>';
+
+  // Time labels
+  html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>12am</span></div>';
+
+  // Legend
+  html += '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">';
+  Object.entries(labels).forEach(([k, v]) => {
+    html += `<span style="font-size:10px;color:${colors[k]}">● ${v}</span>`;
+  });
+  html += '</div>';
+
+  // Segments list
+  html += '<div style="display:flex;flex-direction:column;gap:4px;margin-top:10px">';
+  segments.forEach(([s, e, period]) => {
+    const isActive = currentH >= s && currentH < e;
+    const startLabel = `${s === 0 ? '12' : s > 12 ? s-12 : s}:00 ${s < 12 ? 'AM' : 'PM'}`;
+    const endLabel = `${e === 0 || e === 24 ? '12' : e > 12 ? e-12 : e}:00 ${e <= 12 ? 'AM' : 'PM'}`;
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:${isActive ? colors[period]+'22' : 'transparent'};border:1px solid ${isActive ? colors[period]+'44' : 'transparent'}">
+      <span style="width:8px;height:8px;border-radius:50%;background:${colors[period]};flex-shrink:0;display:inline-block"></span>
+      <span style="font-size:11px;color:${isActive ? colors[period] : 'var(--text2)'}; font-weight:${isActive ? 600 : 400}">${labels[period]}</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:auto">${startLabel} – ${endLabel}</span>
+      ${isActive ? '<span style="font-size:10px;color:'+colors[period]+';font-weight:700">NOW</span>' : ''}
+    </div>`;
+  });
+  html += '</div>';
+
+  return html;
+}
+
+function showAdvisorNoData() {
+  setText('adv-rec-headline', 'Waiting for data...');
+  setText('adv-rec-reason', 'Start the app and let it collect a few readings. Charge rate estimation needs at least 3 data points.');
+  const badge = document.getElementById('adv-rec-badge');
+  if (badge) { badge.textContent = 'STANDBY'; badge.style.background = 'rgba(107,122,148,0.2)'; badge.style.color = 'var(--text2)'; }
+}
+
+function updateAdvisor() {
+  const now = new Date();
+  const period = getTouPeriod(now);
+  const next = getNextTransition(now);
+  const h = now.getHours() + now.getMinutes() / 60;
+  const isWeekend = now.getDay() === 0 || now.getDay() === 6 || isSdgeHoliday(now);
+
+  // Period banner
+  const pc = {
+    'on-peak':        { bg:'rgba(255,68,68,0.12)',  border:'rgba(255,68,68,0.3)',  color:'#ff4444', label:'ON-PEAK · 4–9 PM', icon:'🔴' },
+    'off-peak':       { bg:'rgba(255,184,0,0.08)',  border:'rgba(255,184,0,0.25)', color:'#ffb800', label:'OFF-PEAK', icon:'🟡' },
+    'super-off-peak': { bg:'rgba(0,229,160,0.08)',  border:'rgba(0,229,160,0.25)', color:'#00e5a0', label:'SUPER OFF-PEAK · Cheapest', icon:'🟢' },
+  }[period];
+
+  const banner = document.getElementById('adv-period-banner');
+  if (banner) { banner.style.background = pc.bg; banner.style.border = `1px solid ${pc.border}`; }
+  const periodLabel = document.getElementById('adv-period-label');
+  if (periodLabel) { periodLabel.textContent = pc.label; periodLabel.style.color = pc.color; }
+  setText('adv-period-next', `Next change at ${next.label} · ${next.mins} min`);
+  setText('adv-period-icon', pc.icon);
+
+  // Weekend badge
+  setText('adv-weekend-badge', isWeekend ? 'WEEKEND / HOLIDAY' : 'WEEKDAY');
+
+  // Schedule bars
+  const schedDiv = document.getElementById('adv-schedule-bars');
+  if (schedDiv) schedDiv.innerHTML = buildScheduleBars(now);
+
+  // Get latest SOC
+  const recentPts = getFilteredHistory(1);
+  if (recentPts.length === 0) { showAdvisorNoData(); return; }
+
+  const latest = recentPts[recentPts.length - 1];
+  const dp1Soc = latest.dp1Soc;
+  const dp2Soc = latest.dp2Soc;
+
+  const dp1Rate = estimateRate('dp1');
+  const dp2Rate = estimateRate('dp2');
+
+  // Project to 4pm — use direct inputWatts rate when available, else solar geometry model
+  const hoursUntil4pm = Math.max(0, 16 - h);
+  const dp1ModelRate = getProjectedRateWithSolarModel('dp1', dp1Soc, now);
+  const dp2ModelRate = getProjectedRateWithSolarModel('dp2', dp2Soc, now);
+  // Use direct rate if available (it's more accurate), else model
+  const dp1UseRate = dp1Rate !== null ? dp1Rate : dp1ModelRate;
+  const dp2UseRate = dp2Rate !== null ? dp2Rate : dp2ModelRate;
+  const dp1Proj = h < 16 ? projectAt(dp1Soc, dp1UseRate, hoursUntil4pm) : Math.round(dp1Soc);
+  const dp2Proj = h < 16 ? projectAt(dp2Soc, dp2UseRate, hoursUntil4pm) : Math.round(dp2Soc);
+
+  // Update projection UI
+  const dp1ProjVal = dp1Proj !== null ? dp1Proj + '%' : dp1Soc + '% (est)';
+  const dp2ProjVal = dp2Proj !== null ? dp2Proj + '%' : dp2Soc + '% (est)';
+  setText('adv-dp1-proj', dp1ProjVal);
+  setText('adv-dp2-proj', dp2ProjVal);
+  const b1 = document.getElementById('adv-dp1-proj-bar');
+  const b2 = document.getElementById('adv-dp2-proj-bar');
+  if (b1) b1.style.width = (dp1Proj || dp1Soc) + '%';
+  if (b2) b2.style.width = (dp2Proj || dp2Soc) + '%';
+
+  const solarCtx = getSolarContextString(now);
+  // rates computed below
+  const usedDp1Rate = dp1Rate !== null ? dp1Rate : dp1ModelRate;
+  const usedDp2Rate = dp2Rate !== null ? dp2Rate : dp2ModelRate;
+  const usingDirect = dp1Rate !== null || dp2Rate !== null;
+  const usingModel = !usingDirect && (dp1ModelRate !== null || dp2ModelRate !== null);
+  const rateStr = (usedDp1Rate !== null || usedDp2Rate !== null)
+    ? `${usingModel ? 'Est (clear sky): ' : ''}DP1 ${usedDp1Rate !== null ? (usedDp1Rate > 0 ? '+' : '') + usedDp1Rate.toFixed(1) + '%/hr' : '?'} · DP2 ${usedDp2Rate !== null ? (usedDp2Rate > 0 ? '+' : '') + usedDp2Rate.toFixed(1) + '%/hr' : '?'} · Sun ${solarCtx.altDeg}° · Sunset ${solarCtx.sunsetStr}`
+    : `Sun ${solarCtx.altDeg}° alt · Sunset ${solarCtx.sunsetStr} · ${solarCtx.seasonNote}`;
+  setText('adv-proj-note', h >= 16 ? 'On-peak period — showing current SOC' : rateStr);
+  setText('adv-proj-updated', `@ ${fmtTime(now)}`);
+
+  // Update solar context card
+  setText('adv-sun-alt', solarCtx.altDeg + '°');
+  setText('adv-sun-az', solarCtx.azDeg + '°');
+  setText('adv-sunset', solarCtx.sunsetStr);
+  setText('adv-ratio-now', solarCtx.ratioAB + 'x');
+  setText('adv-ratio-daily', solarCtx.dailyRatioAB + 'x');
+  setText('adv-season-note', solarCtx.seasonNote);
+  setText('adv-solar-month', solarCtx.month);
+
+  // ---- RECOMMENDATION LOGIC ----
+  const DIVERGE_WARN = 15;   // % SOC difference worth flagging
+  const DIVERGE_SWAP = 25;   // % SOC difference strong swap signal
+  const MAXOUT_RISK  = 88;   // projected SOC that risks hitting 100% before 4pm
+
+  const useProj = dp1Proj !== null && dp2Proj !== null;
+  const p1 = useProj ? dp1Proj : dp1Soc;
+  const p2 = useProj ? dp2Proj : dp2Soc;
+  const diff = Math.abs(p1 - p2);
+  const higherDP = p1 >= p2 ? 'DP1' : 'DP2';
+  const lowerDP  = p1 < p2  ? 'DP1' : 'DP2';
+
+  let headline, reason, badgeText, badgeColor, badgeBg, cardBorder;
+
+  if (h >= 21 || h < 6) {
+    // Overnight — no solar, just informational
+    headline = 'Overnight — no action needed';
+    reason = `Both units charging on super off-peak grid power. DP1 ${Math.round(dp1Soc)}% · DP2 ${Math.round(dp2Soc)}%. Check advisor again after sunrise.`;
+    badgeText = 'OVERNIGHT'; badgeColor = 'var(--text2)'; badgeBg = 'rgba(107,122,148,0.15)'; cardBorder = 'var(--border)';
+
+  } else if (h >= 16) {
+    // On-peak — too late to swap, just report status
+    if (diff >= DIVERGE_WARN) {
+      headline = `On-peak: ${higherDP} is carrying more load`;
+      reason = `${higherDP} at ${Math.round(p1 >= p2 ? p1 : p2)}% vs ${lowerDP} at ${Math.round(p1 < p2 ? p1 : p2)}%. ${diff >= DIVERGE_SWAP ? 'Consider swapping DVH legs tomorrow morning to rebalance.' : 'Mild imbalance — monitor overnight.'}`;
+      badgeText = diff >= DIVERGE_SWAP ? 'REBALANCE TOMORROW' : 'WATCH'; 
+      badgeColor = diff >= DIVERGE_SWAP ? '#ffb800' : 'var(--text2)';
+      badgeBg = diff >= DIVERGE_SWAP ? 'rgba(255,184,0,0.15)' : 'rgba(107,122,148,0.15)';
+      cardBorder = diff >= DIVERGE_SWAP ? 'rgba(255,184,0,0.3)' : 'var(--border)';
+    } else {
+      headline = 'On-peak: balanced';
+      reason = `DP1 ${Math.round(dp1Soc)}% · DP2 ${Math.round(dp2Soc)}%. Both units well matched heading through evening peak.`;
+      badgeText = 'BALANCED'; badgeColor = '#00e5a0'; badgeBg = 'rgba(0,229,160,0.12)'; cardBorder = 'rgba(0,229,160,0.2)';
+    }
+
+  } else if (h >= 14 && h < 16) {
+    // 2pm-4pm final window before on-peak — last chance to act
+    if (p1 >= MAXOUT_RISK && p2 < MAXOUT_RISK - DIVERGE_WARN) {
+      headline = `Swap DVH now — ${higherDP} will max out`;
+      reason = `${higherDP} projected at ${Math.round(p1 >= p2 ? p1 : p2)}% by 4pm and still charging. ${lowerDP} at ${Math.round(p1 < p2 ? p1 : p2)}%. Swapping DVH shifts load to the fuller unit and may prevent hitting 100% prematurely.`;
+      badgeText = 'SWAP NOW'; badgeColor = '#ff4444'; badgeBg = 'rgba(255,68,68,0.15)'; cardBorder = 'rgba(255,68,68,0.3)';
+    } else if (diff >= DIVERGE_SWAP) {
+      headline = `Consider DVH swap — ${diff}% SOC gap`;
+      reason = `${higherDP} projected ${Math.round(p1 >= p2 ? p1 : p2)}% vs ${lowerDP} ${Math.round(p1 < p2 ? p1 : p2)}% at 4pm. Swapping DVH legs would shift house load onto ${higherDP} to help balance charge going into on-peak.`;
+      badgeText = 'CONSIDER SWAP'; badgeColor = '#ffb800'; badgeBg = 'rgba(255,184,0,0.15)'; cardBorder = 'rgba(255,184,0,0.3)';
+    } else {
+      headline = 'Hold current DVH — good to go';
+      reason = `DP1 ${Math.round(p1 >= p2 ? p1 : p2 === dp1Proj ? dp1Proj : dp2Proj)}% · DP2 ${Math.round(p2 >= p1 ? p2 : p1 === dp2Proj ? dp2Proj : dp1Proj)}% projected at 4pm. Units are balanced — no swap needed.`;
+      headline = `Hold current DVH — balanced for on-peak`;
+      reason = `DP1 ${dp1Proj}% · DP2 ${dp2Proj}% projected at 4pm. ${diff < 10 ? 'Units are well matched.' : 'Minor imbalance but within acceptable range.'} No action needed.`;
+      badgeText = 'NO ACTION'; badgeColor = '#00e5a0'; badgeBg = 'rgba(0,229,160,0.12)'; cardBorder = 'rgba(0,229,160,0.2)';
+    }
+
+  } else {
+    // 6am-2pm solar charging window (includes super off-peak 10am-2pm)
+    if (p1 >= MAXOUT_RISK || p2 >= MAXOUT_RISK) {
+      const riskDP = p1 >= MAXOUT_RISK ? 'DP1' : 'DP2';
+      const riskPct = Math.max(p1, p2);
+      headline = `${riskDP} projected to max out before 4pm`;
+      reason = `${riskDP} on track to hit ${riskPct}% by 4pm. Consider swapping DVH to shift more load onto ${riskDP} and slow its charge rate. Preventing a premature 100% means more usable capacity heading into on-peak.`;
+      badgeText = 'MAX OUT RISK'; badgeColor = '#ff4444'; badgeBg = 'rgba(255,68,68,0.15)'; cardBorder = 'rgba(255,68,68,0.3)';
+    } else if (diff >= DIVERGE_SWAP) {
+      headline = `DVH swap worth considering — ${diff}% gap`;
+      reason = `${higherDP} projected ${Math.round(Math.max(p1,p2))}% vs ${lowerDP} ${Math.round(Math.min(p1,p2))}% at 4pm. If this divergence continues, ${higherDP} risks hitting 100% before on-peak. Swapping DVH shifts house load to even things out.`;
+      badgeText = 'CONSIDER SWAP'; badgeColor = '#ffb800'; badgeBg = 'rgba(255,184,0,0.15)'; cardBorder = 'rgba(255,184,0,0.3)';
+    } else if (diff >= DIVERGE_WARN) {
+      headline = 'Mild divergence — keep watching';
+      reason = `${higherDP} projected ${Math.round(Math.max(p1,p2))}% vs ${lowerDP} ${Math.round(Math.min(p1,p2))}% at 4pm. Gap is ${diff}% — not critical yet but trending. Check again in 30–60 min.`;
+      badgeText = 'WATCH'; badgeColor = '#ffb800'; badgeBg = 'rgba(255,184,0,0.10)'; cardBorder = 'rgba(255,184,0,0.2)';
+    } else {
+      headline = 'Hold current DVH — tracking well';
+      reason = `DP1 ${dp1Proj !== null ? dp1Proj : Math.round(dp1Soc)}% · DP2 ${dp2Proj !== null ? dp2Proj : Math.round(dp2Soc)}% projected at 4pm. Units are charging in balance. No action needed.`;
+      badgeText = 'BALANCED'; badgeColor = '#00e5a0'; badgeBg = 'rgba(0,229,160,0.12)'; cardBorder = 'rgba(0,229,160,0.2)';
+    }
+  }
+
+  // Apply recommendation
+  setText('adv-rec-headline', headline);
+  setText('adv-rec-reason', reason);
+  const badge = document.getElementById('adv-rec-badge');
+  if (badge) { badge.textContent = badgeText; badge.style.background = badgeBg; badge.style.color = badgeColor; }
+  const card = document.getElementById('adv-rec-card');
+  if (card) card.style.border = `1px solid ${cardBorder}`;
+}
+
+
+// ============================================================
+// ALARMS — rogue cell detection + XT60i solar input monitor
+// ============================================================
+
+const ALARM_KEY = 'ef_alarms_v1';
+let activeAlarms = {};          // key -> {id, severity, title, detail, ts}
+let notifPermission = 'default';
+let dismissedAlarms = new Set(); // dismissed this session
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { notifPermission = 'granted'; return; }
+  if (Notification.permission !== 'denied') {
+    const result = await Notification.requestPermission();
+    notifPermission = result;
+  }
+}
+
+function sendNotification(title, body) {
+  if (notifPermission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon: '', tag: title });
+  } catch(e) {}
+}
+
+function renderAlarms() {
+  const container = document.getElementById('alarm-container');
+  if (!container) return;
+
+  const visible = Object.values(activeAlarms).filter(a => !dismissedAlarms.has(a.id));
+  if (visible.length === 0) { container.innerHTML = ''; return; }
+
+  container.innerHTML = visible.map(a => `
+    <div class="alarm-card ${a.severity}" id="alarm-${a.id}">
+      <div class="alarm-icon">${a.severity === 'danger' ? '🔴' : '🟡'}</div>
+      <div class="alarm-body">
+        <div class="alarm-title ${a.severity}">${a.title}</div>
+        <div class="alarm-detail">${a.detail}</div>
+      </div>
+      <button class="alarm-dismiss" onclick="dismissAlarm('${a.id}')" title="Dismiss">×</button>
+    </div>
+  `).join('');
+}
+
+function dismissAlarm(id) {
+  dismissedAlarms.add(id);
+  renderAlarms();
+}
+
+function raiseAlarm(id, severity, title, detail) {
+  const isNew = !activeAlarms[id];
+  activeAlarms[id] = { id, severity, title, detail, ts: Date.now() };
+  if (isNew && !dismissedAlarms.has(id)) {
+    sendNotification('⚠️ ' + title, detail);
+    dismissedAlarms.delete(id); // re-show if it was previously dismissed and is now new
+  }
+  renderAlarms();
+}
+
+function clearAlarm(id) {
+  if (activeAlarms[id]) {
+    delete activeAlarms[id];
+    dismissedAlarms.delete(id); // allow re-triggering if condition returns
+    renderAlarms();
+  }
+}
+
+function checkAlarms(packs) {
+  if (!packs) return;
+
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60;
+  const isSolarWindow = h >= 8 && h <= 17;
+
+  // ---- ROGUE CELL / BALANCE ALARMS ----
+  // Check each of the 6 packs independently
+  const packDefs = [
+    { key: 'dp1',    label: 'DP1 Main Unit' },
+    { key: 'dp1eb1', label: 'DP1 Extra Battery A' },
+    { key: 'dp1eb2', label: 'DP1 Extra Battery B' },
+    { key: 'dp2',    label: 'DP2 Main Unit' },
+    { key: 'dp2eb1', label: 'DP2 Extra Battery A' },
+    { key: 'dp2eb2', label: 'DP2 Extra Battery B' },
+  ];
+
+  packDefs.forEach(({ key, label }) => {
+    const pack = packs[key];
+    const alarmId = 'cell-' + key;
+
+    if (!pack) { clearAlarm(alarmId); return; }
+
+    const mv = pack.deltaVoltMv;
+    const soc = pack.bms.soc || 0;
+    const nearFull = soc >= 85;
+
+    if (mv >= DANGER_MV) {
+      // Serious imbalance at any SOC
+      raiseAlarm(alarmId, 'danger',
+        `${label}: Cell imbalance ${mv} mV`,
+        `Max–min cell voltage spread is ${mv} mV — above the 100 mV danger threshold. ` +
+        `Charge to 100%, power off, and let it rest overnight to top balance. ` +
+        `If this persists after 2–3 balance cycles, a cell may be degraded.`
+      );
+    } else if (mv >= WARN_MV && nearFull) {
+      // Warn-level imbalance caught near top of charge — best time to flag it
+      raiseAlarm(alarmId, 'warn',
+        `${label}: Balance check recommended`,
+        `Cell spread is ${mv} mV at ${Math.round(soc)}% SOC. ` +
+        `Charge to 100%, power off completely, and let rest for several hours or overnight. ` +
+        `This allows passive top balancing. Recheck after one full cycle.`
+      );
+    } else if (mv >= WARN_MV) {
+      // Warn-level but not near full — note it but softer
+      raiseAlarm(alarmId, 'warn',
+        `${label}: Cell spread ${mv} mV`,
+        `Cell imbalance is elevated. Charge fully and let rest overnight to top balance. ` +
+        `Check again after a full charge cycle.`
+      );
+    } else {
+      clearAlarm(alarmId);
+    }
+  });
+
+  // ---- XT60i SOLAR INPUT ALARM ----
+  const dp1Solar = packs.dp1 ? (packs.dp1.mppt.inWatts || 0) : 0;
+  const dp2Solar = packs.dp2 ? (packs.dp2.mppt.inWatts || 0) : 0;
+  const XT60_ACTIVE_THRESHOLD = 200;  // W — other DP clearly charging
+  const XT60_LOW_THRESHOLD = 50;      // W — this DP suspiciously low
+
+  if (isSolarWindow) {
+    if (dp1Solar > XT60_ACTIVE_THRESHOLD && dp2Solar < XT60_LOW_THRESHOLD) {
+      raiseAlarm('xt60-dp2', 'warn',
+        'DP2 solar input unexpectedly low',
+        `DP1 is receiving ${Math.round(dp1Solar)}W solar while DP2 shows only ${Math.round(dp2Solar)}W ` +
+        `on a clear solar day. Possible loose or receding XT60i connector on DP2. ` +
+        `Check the DC solar input port on the back of DP2.`
+      );
+    } else {
+      clearAlarm('xt60-dp2');
+    }
+
+    if (dp2Solar > XT60_ACTIVE_THRESHOLD && dp1Solar < XT60_LOW_THRESHOLD) {
+      raiseAlarm('xt60-dp1', 'warn',
+        'DP1 solar input unexpectedly low',
+        `DP2 is receiving ${Math.round(dp2Solar)}W solar while DP1 shows only ${Math.round(dp1Solar)}W ` +
+        `on a clear solar day. Possible loose or receding XT60i connector on DP1. ` +
+        `Check the DC solar input port on the back of DP1.`
+      );
+    } else {
+      clearAlarm('xt60-dp1');
+    }
+  }
+}
+
+function resetApp() {
+  if (confirm('Reset credentials and start over?')) {
+    localStorage.removeItem(CREDS_KEY);
+    localStorage.removeItem(HISTORY_KEY);
+    clearInterval(refreshTimer);
+    location.reload();
+  }
+}
+
+function updateSettingsDisplay() {
+  setText('set-api-status', isDemo ? 'Demo Mode' : 'Connected');
+  setText('set-dp1-sn', config.dp1 ? config.dp1.substring(0, 12) + '...' : '—');
+  setText('set-dp2-sn', config.dp2 ? config.dp2.substring(0, 12) + '...' : '—');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function setWidth(id, pct) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+
+function setValColor(id, text, val, warn, danger) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'summary-value ' + deltaClass(val, warn, danger);
+}
+
+function deltaClass(mv) {
+  if (mv < WARN_MV) return 'ok';
+  if (mv < DANGER_MV) return 'warn';
+  return 'danger';
+}
+
+function fmtTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtTimeShort(d) {
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Check for saved creds
+  try {
+    const saved = localStorage.getItem(CREDS_KEY);
+    if (saved) {
+      config = JSON.parse(saved);
+      // Pre-fill form
+      document.getElementById('setup-access-key').value = config.ak || '';
+      document.getElementById('setup-secret-key').value = config.sk || '';
+      document.getElementById('dp1-sn').value = config.dp1 || '';
+      document.getElementById('dp2-sn').value = config.dp2 || '';
+    }
+  } catch(e) {}
+});
+</script>
+</body>
+</html>
