@@ -915,6 +915,12 @@
         <div style="padding:16px">
           <div id="adv-rec-headline" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1.2;margin-bottom:8px"></div>
           <div id="adv-rec-reason" style="color:var(--text2);font-size:12px;line-height:1.6"></div>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+            <button id="dvh-swap-btn" onclick="logDvhSwap()" style="background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.3);border-radius:8px;color:var(--accent);cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;padding:8px 14px;transition:all 0.2s">
+              ⇄ Log DVH Swap
+            </button>
+            <span id="dvh-swap-status" style="font-size:11px;color:var(--text3)"></span>
+          </div>
         </div>
       </div>
 
@@ -1914,6 +1920,7 @@ function showTab(name) {
   }
   if (name === 'advisor') {
     updateAdvisor();
+    updateDvhSwapUI();
   }
 }
 
@@ -2549,6 +2556,20 @@ function updateAdvisor() {
     }
   }
 
+  // Override recommendation if DVH was already swapped today
+  if (dvhSwappedToday()) {
+    const swap = getLastDvhSwap();
+    headline = 'DVH swapped today — monitoring balance';
+    reason = `Swap logged at ${swap.timeStr}. Watching SOC divergence. If units fall out of balance again before 4pm the recommendation will update.`;
+    badgeText = 'SWAPPED'; badgeColor = '#00e5a0'; badgeBg = 'rgba(0,229,160,0.12)'; cardBorder = 'rgba(0,229,160,0.2)';
+    // Re-enable swap recommendation only if divergence is severe despite the swap
+    if (diff >= DIVERGE_SWAP * 1.5) {
+      headline = 'Consider swapping back — large divergence despite swap';
+      reason = `Units swapped at ${swap.timeStr} but SOC gap has grown to ${diff}%. May need to swap back.`;
+      badgeText = 'REVIEW SWAP'; badgeColor = '#ffb800'; badgeBg = 'rgba(255,184,0,0.15)'; cardBorder = 'rgba(255,184,0,0.3)';
+    }
+  }
+
   // Apply recommendation
   setText('adv-rec-headline', headline);
   setText('adv-rec-reason', reason);
@@ -2556,6 +2577,7 @@ function updateAdvisor() {
   if (badge) { badge.textContent = badgeText; badge.style.background = badgeBg; badge.style.color = badgeColor; }
   const card = document.getElementById('adv-rec-card');
   if (card) card.style.border = `1px solid ${cardBorder}`;
+  updateDvhSwapUI();
 }
 
 
@@ -2710,6 +2732,65 @@ function checkAlarms(packs) {
     } else {
       clearAlarm('xt60-dp1');
     }
+  }
+}
+
+
+// ============================================================
+// DVH SWAP LOGGER
+// ============================================================
+const DVH_SWAP_KEY = 'ef_dvh_swap_v1';
+
+function logDvhSwap() {
+  const now = new Date();
+  const swapData = { ts: now.getTime(), timeStr: fmtTime(now) };
+  localStorage.setItem(DVH_SWAP_KEY, JSON.stringify(swapData));
+  updateDvhSwapUI();
+  // Re-run advisor to update recommendation
+  updateAdvisor();
+}
+
+function getLastDvhSwap() {
+  try {
+    const raw = localStorage.getItem(DVH_SWAP_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // Only valid for today
+    const swapDate = new Date(data.ts);
+    const now = new Date();
+    if (swapDate.toDateString() !== now.toDateString()) {
+      localStorage.removeItem(DVH_SWAP_KEY);
+      return null;
+    }
+    return data;
+  } catch(e) { return null; }
+}
+
+function dvhSwappedToday() {
+  return getLastDvhSwap() !== null;
+}
+
+function updateDvhSwapUI() {
+  const swap = getLastDvhSwap();
+  const btn = document.getElementById('dvh-swap-btn');
+  const status = document.getElementById('dvh-swap-status');
+  if (!btn || !status) return;
+  if (swap) {
+    btn.textContent = '⇄ Swap logged';
+    btn.style.background = 'rgba(0,229,160,0.2)';
+    btn.style.borderColor = 'rgba(0,229,160,0.5)';
+    btn.onclick = () => {
+      localStorage.removeItem(DVH_SWAP_KEY);
+      updateDvhSwapUI();
+      updateAdvisor();
+    };
+    status.textContent = `Swapped at ${swap.timeStr} · tap to undo`;
+  } else {
+    btn.textContent = '⇄ Log DVH Swap';
+    btn.style.background = 'rgba(0,229,160,0.1)';
+    btn.style.borderColor = 'rgba(0,229,160,0.3)';
+    btn.onclick = logDvhSwap;
+    status.textContent = '';
   }
 }
 
