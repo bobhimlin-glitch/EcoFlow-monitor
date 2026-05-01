@@ -609,6 +609,24 @@
     letter-spacing: 0.08em;
   }
 
+  .interval-setup-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 10px;
+    transition: all 0.2s;
+  }
+  .interval-setup-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+
   .interval-btn {
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -690,6 +708,17 @@
     <div class="field-group" style="margin-top:8px">
       <label>Delta Pro 2 — Serial Number</label>
       <input type="text" id="dp2-sn" placeholder="DP2 serial number" autocorrect="off" autocapitalize="off">
+    </div>
+  </div>
+
+  <div class="setup-card">
+    <h2>Refresh Interval</h2>
+    <p>How often to poll EcoFlow API. Faster = more real-time but uses more API quota.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <button class="interval-setup-btn active" data-ms="15000" onclick="selectInterval(this)">15s</button>
+      <button class="interval-setup-btn" data-ms="30000" onclick="selectInterval(this)">30s</button>
+      <button class="interval-setup-btn" data-ms="60000" onclick="selectInterval(this)">1m</button>
+      <button class="interval-setup-btn" data-ms="300000" onclick="selectInterval(this)">5m</button>
     </div>
   </div>
 
@@ -1049,7 +1078,7 @@
 // ============================================================
 const WARN_MV = 50;
 const DANGER_MV = 100;
-const REFRESH_MS = 30000;
+let REFRESH_MS = 30000; // configurable
 const MAX_HISTORY_DAYS = 7;
 const HISTORY_KEY = 'ef_monitor_history_v2';
 const CREDS_KEY = 'ef_monitor_creds_v2';
@@ -1065,6 +1094,16 @@ let charts = {};
 // ============================================================
 // SETUP
 // ============================================================
+function selectInterval(btn) {
+  document.querySelectorAll('.interval-setup-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function getSelectedIntervalMs() {
+  const active = document.querySelector('.interval-setup-btn.active');
+  return active ? parseInt(active.dataset.ms) : 30000;
+}
+
 function saveSetup() {
   const ak = document.getElementById('setup-access-key').value.trim();
   const sk = document.getElementById('setup-secret-key').value.trim();
@@ -1080,7 +1119,7 @@ function saveSetup() {
     return;
   }
 
-  config = { ak, sk, dp1, dp1eb1, dp1eb2, dp2, dp2eb1, dp2eb2 };
+  config = { ak, sk, dp1, dp1eb1, dp1eb2, dp2, dp2eb1, dp2eb2, refreshMs: getSelectedIntervalMs() };
   localStorage.setItem(CREDS_KEY, JSON.stringify(config));
   launchApp();
 }
@@ -1107,6 +1146,7 @@ function launchApp() {
   updateSettingsDisplay();
   loadHistory();
   refresh();
+  REFRESH_MS = config.refreshMs || 30000;
   refreshTimer = setInterval(refresh, REFRESH_MS);
 }
 
@@ -2807,6 +2847,9 @@ function updateSettingsDisplay() {
   setText('set-api-status', isDemo ? 'Demo Mode' : 'Connected');
   setText('set-dp1-sn', config.dp1 ? config.dp1.substring(0, 12) + '...' : '—');
   setText('set-dp2-sn', config.dp2 ? config.dp2.substring(0, 12) + '...' : '—');
+  const ms = config.refreshMs || 30000;
+  const label = ms < 60000 ? (ms/1000) + ' seconds' : (ms/60000) + ' minute' + (ms >= 120000 ? 's' : '');
+  setText('set-interval-display', label);
 }
 
 // ============================================================
@@ -2860,6 +2903,12 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('setup-secret-key').value = config.sk || '';
       document.getElementById('dp1-sn').value = config.dp1 || '';
       document.getElementById('dp2-sn').value = config.dp2 || '';
+      // Pre-select saved interval
+      if (config.refreshMs) {
+        document.querySelectorAll('.interval-setup-btn').forEach(b => {
+          b.classList.toggle('active', parseInt(b.dataset.ms) === config.refreshMs);
+        });
+      }
     }
   } catch(e) {}
 });
