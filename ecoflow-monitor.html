@@ -1554,8 +1554,9 @@ function updateOverview(packs) {
   const totalKwh = ((dp1Wh + dp2Wh) / 1000).toFixed(1);
 
   // System-level output watts for time estimates
-  const dp1OutW = Math.round(dp1.pd.wattsOutSum || dp1.inv.outputW || 0);
-  const dp2OutW = Math.round(dp2.pd.wattsOutSum || dp2.inv.outputW || 0);
+  // Use inv.outputW for AC output (Infinity Port), not pd.wattsOutSum which includes EB charging
+  const dp1OutW = Math.round(dp1.inv.outputW || 0);
+  const dp2OutW = Math.round(dp2.inv.outputW || 0);
 
   const dp1TimeH = systemTimeRemain(dp1Wh, dp1OutW);
   const dp2TimeH = systemTimeRemain(dp2Wh, dp2OutW);
@@ -1682,7 +1683,7 @@ function updateDetailTab(which, main, eb1, eb2) {
   const sysSoc = systemSoc(main, eb1, eb2);
   const sysWh = systemWhRemain(sysSoc, packCount);
   const inW = Math.round(main.pd.wattsInSum || main.mppt.inWatts || 0);
-  const outW = Math.round(main.pd.wattsOutSum || main.inv.outputW || 0);
+  const outW = Math.round(main.inv.outputW || 0);
   const timeH = systemTimeRemain(sysWh, outW);
   const fmtHrs = h => h === null ? '—' : h > 99 ? '>99 hrs' : h.toFixed(1) + ' hrs est';
   const maxIn = 6500;
@@ -1698,7 +1699,8 @@ function updateDetailTab(which, main, eb1, eb2) {
   const inputColor = isGrid ? 'var(--warn)' : 'var(--accent)';
 
   // AC inverter output (Infinity Port + direct AC outlets)
-  const acOutW = Math.round(main.inv.outputW || outW);
+  // inv.outputWatts is 0 when inverter is off — use directly, no fallback
+  const acOutW = Math.round(main.inv.outputW || 0);
   // EB charging current from slave inputWatts
   const slave1ChargeW = eb1 ? Math.round(eb1.bms.inputW || 0) : 0;
   const slave2ChargeW = eb2 ? Math.round(eb2.bms.inputW || 0) : 0;
