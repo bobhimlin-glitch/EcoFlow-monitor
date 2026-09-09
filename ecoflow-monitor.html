@@ -746,6 +746,7 @@
     <button class="tab" onclick="showTab('dp2')">DP2 Detail</button>
     <button class="tab" onclick="showTab('history')">History</button>
     <button class="tab" onclick="showTab('advisor')">Advisor</button>
+    <button class="tab" onclick="showTab('rawdata')">Raw Data</button>
     <button class="tab" onclick="showTab('settings')">Settings</button>
   </div>
 
@@ -1027,6 +1028,21 @@
       </div>
     </div>
 
+    <!-- RAW DATA TAB -->
+    <div class="tab-panel" id="tab-rawdata">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent);letter-spacing:-0.3px">Raw API Data</div>
+      <div style="color:var(--text2);font-size:12px;margin-top:2px;margin-bottom:12px">Live field inspector · Green = latest poll · Yellow = cached · Red = never seen</div>
+
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button onclick="showRawUnit('dp1')" id="raw-btn-dp1" class="interval-btn active">DP1</button>
+        <button onclick="showRawUnit('dp2')" id="raw-btn-dp2" class="interval-btn">DP2</button>
+      </div>
+
+      <div id="raw-data-panel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-size:11px;line-height:2;max-height:70vh;overflow-y:auto;word-break:break-all">
+        No data yet — connect to see raw fields
+      </div>
+    </div>
+
     <!-- SETTINGS TAB -->
     <div class="tab-panel" id="tab-settings">
       <div class="settings-section">
@@ -1063,8 +1079,7 @@
       <button class="danger-btn" onclick="clearHistory()">Clear History Data</button>
       <button class="danger-btn" style="margin-top:8px" onclick="resetApp()">Reset & Re-enter Credentials</button>
 
-      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;padding:8px 0 4px">Raw API Debug</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:10px;color:var(--text2);line-height:1.6;max-height:300px;overflow-y:auto;word-break:break-all" id="debug-raw">No data yet — connect to see raw API fields</div>
+
     </div>
 
   </div>
@@ -1388,6 +1403,9 @@ async function refresh() {
     const dp1parsed = dp1raw ? parseDeviceQuota(dp1raw) : null;
     const dp2parsed = dp2raw ? parseDeviceQuota(dp2raw) : null;
 
+    // Store raw data for inspector
+    updateRawDataStore(dp1raw, dp2raw);
+
     // Build packs object — EBs come from slave blocks within each DP response
     // API alternates which slave it returns per poll, so we cache last known data
     function slaveAsPack(slave) {
@@ -1452,58 +1470,6 @@ async function refresh() {
     document.getElementById('last-update-time').textContent = fmtTime(new Date());
     document.getElementById('error-banner').style.display = 'none';
     if (document.getElementById('tab-advisor').classList.contains('active')) updateAdvisor();
-    // Update raw debug panel — show only key diagnostic fields
-    const debugEl = document.getElementById('debug-raw');
-    if (debugEl && packs.dp1) {
-      const r = packs.dp1.raw;
-      const watchFields = [
-        'ems.f32LcdShowSoc',
-        'ems.lcdShowSoc',
-        'bmsMaster.f32ShowSoc',
-        'bmsMaster.soc',
-        'bmsMaster.cellVol',
-        'bmsMaster.minCellVol',
-        'bmsMaster.maxCellVol',
-        'bmsMaster.maxVolDiff',
-        'bmsMaster.cellTemp',
-        'bmsMaster.cycles',
-        'bmsMaster.vol',
-        'bmsMaster.amp',
-        'bmsSlave1.f32ShowSoc',
-        'bmsSlave1.cellVol',
-        'bmsSlave1.maxVolDiff',
-        'bmsSlave1.cycles',
-        'bmsSlave2.f32ShowSoc',
-        'bmsSlave2.actSoc',
-        'bmsSlave2.soc',
-        'bmsSlave2.cellVol',
-        'bmsSlave2.maxVolDiff',
-        'bmsSlave2.cycles',
-        'bmsMaster.outputWatts',
-        'bmsMaster.inputWatts',
-        'bmsSlave1.outputWatts',
-        'bmsSlave1.inputWatts',
-        'bmsSlave2.outputWatts',
-        'bmsSlave2.inputWatts',
-        'pd.wattsInSum',
-        'pd.wattsOutSum',
-        'pd.remainTime',
-        'ems.chgRemainTime',
-        'ems.dsgRemainTime',
-        'mppt.inWatts',
-        'mppt.inVol',
-        'mppt.inAmp',
-        'inv.inputWatts',
-        'inv.outputWatts',
-        'inv.invOutVol',
-      ];
-      debugEl.innerHTML = '<strong style="color:var(--accent)">DP1 Key Fields:</strong><br><br>' +
-        watchFields.map(k => {
-          const val = r[k];
-          const found = val !== undefined;
-          return `<span style="color:${found ? 'var(--text2)' : 'var(--text3)'}">${k}:</span> <span style="color:${found ? 'var(--accent)' : 'var(--danger)'}">${found ? val : 'MISSING'}</span>`;
-        }).join('<br>');
-    }
 
   } catch (err) {
     dot.className = 'status-dot error';
@@ -1953,7 +1919,7 @@ function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   const tabs = document.querySelectorAll('.tab');
-  const names = ['overview', 'dp1', 'dp2', 'history', 'advisor', 'settings'];
+  const names = ['overview', 'dp1', 'dp2', 'history', 'advisor', 'rawdata', 'settings'];
   const idx = names.indexOf(name);
   if (idx >= 0) tabs[idx].classList.add('active');
 
@@ -1963,6 +1929,9 @@ function showTab(name) {
   if (name === 'advisor') {
     updateAdvisor();
     updateDvhSwapUI();
+  }
+  if (name === 'rawdata') {
+    renderRawData();
   }
 }
 
@@ -2834,6 +2803,127 @@ function updateDvhSwapUI() {
     btn.onclick = logDvhSwap;
     status.textContent = '';
   }
+}
+
+
+// ============================================================
+// RAW DATA INSPECTOR
+// ============================================================
+
+// Store last two full raw responses, keyed by unit
+let rawDataStore = {
+  dp1: { latest: null, prev: null, latestTs: null },
+  dp2: { latest: null, prev: null, latestTs: null },
+};
+let rawDataUnit = 'dp1'; // currently displayed unit
+
+function updateRawDataStore(dp1Raw, dp2Raw) {
+  const now = Date.now();
+  if (dp1Raw) {
+    rawDataStore.dp1.prev = rawDataStore.dp1.latest;
+    rawDataStore.dp1.latest = dp1Raw;
+    rawDataStore.dp1.latestTs = now;
+  }
+  if (dp2Raw) {
+    rawDataStore.dp2.prev = rawDataStore.dp2.latest;
+    rawDataStore.dp2.latest = dp2Raw;
+    rawDataStore.dp2.latestTs = now;
+  }
+  // Auto-refresh if raw data tab is visible
+  if (document.getElementById('tab-rawdata') &&
+      document.getElementById('tab-rawdata').classList.contains('active')) {
+    renderRawData();
+  }
+}
+
+function showRawUnit(unit) {
+  rawDataUnit = unit;
+  document.getElementById('raw-btn-dp1').classList.toggle('active', unit === 'dp1');
+  document.getElementById('raw-btn-dp2').classList.toggle('active', unit === 'dp2');
+  renderRawData();
+}
+
+function renderRawData() {
+  const panel = document.getElementById('raw-data-panel');
+  if (!panel) return;
+
+  const store = rawDataStore[rawDataUnit];
+  if (!store.latest) {
+    panel.innerHTML = '<span style="color:var(--text3)">No data yet for ' + rawDataUnit.toUpperCase() + '</span>';
+    return;
+  }
+
+  const latest = store.latest;
+  const prev = store.prev;
+  const ts = store.latestTs;
+  const age = ts ? Math.round((Date.now() - ts) / 1000) : '?';
+
+  // Get all keys from latest + prev combined, sorted
+  const allKeySet = new Set([
+    ...Object.keys(latest),
+    ...(prev ? Object.keys(prev) : [])
+  ]);
+  const sortedKeys = [...allKeySet].sort();
+
+  // Group by prefix
+  const groups = {};
+  sortedKeys.forEach(k => {
+    const prefix = k.includes('.') ? k.split('.')[0] : 'other';
+    if (!groups[prefix]) groups[prefix] = [];
+    groups[prefix].push(k);
+  });
+
+  const prefixOrder = ['bmsMaster', 'bmsSlave1', 'bmsSlave2', 'ems', 'inv', 'mppt', 'pd', 'kit', 'other'];
+  const prefixColors = {
+    bmsMaster: '#00e5a0',
+    bmsSlave1: '#00c8d4',
+    bmsSlave2: '#0099ff',
+    ems: '#ffb800',
+    inv: '#ff9500',
+    mppt: '#aa88ff',
+    pd: '#ff6b6b',
+    kit: '#888',
+    other: '#888',
+  };
+
+  let html = `<div style="color:var(--text3);font-size:10px;margin-bottom:10px">${rawDataUnit.toUpperCase()} · Last poll ${age}s ago · ${sortedKeys.size || Object.keys(latest).length} fields</div>`;
+
+  prefixOrder.forEach(prefix => {
+    if (!groups[prefix]) return;
+    const color = prefixColors[prefix] || '#888';
+    html += `<div style="color:${color};font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--border)">${prefix}</div>`;
+
+    groups[prefix].forEach(k => {
+      const inLatest = latest[k] !== undefined;
+      const inPrev = prev && prev[k] !== undefined;
+      let dotColor, dotTitle;
+
+      if (inLatest) {
+        dotColor = 'var(--accent)'; // green = in latest poll
+        dotTitle = 'In latest poll';
+      } else if (inPrev) {
+        dotColor = 'var(--warn)'; // yellow = cached only
+        dotTitle = 'Cached (not in latest poll)';
+      } else {
+        dotColor = 'var(--danger)'; // red = never seen
+        dotTitle = 'Never seen';
+      }
+
+      const val = inLatest ? latest[k] : (inPrev ? prev[k] : 'MISSING');
+      const valStr = val === null ? 'null' : String(val);
+      // Truncate long values (cell arrays etc)
+      const displayVal = valStr.length > 60 ? valStr.substring(0, 57) + '...' : valStr;
+      const fieldName = k.includes('.') ? k.split('.').slice(1).join('.') : k;
+
+      html += `<div style="display:flex;align-items:baseline;gap:6px;padding:1px 0">
+        <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;display:inline-block;margin-top:3px" title="${dotTitle}"></span>
+        <span style="color:var(--text3);flex-shrink:0;min-width:140px;font-size:10px">${fieldName}</span>
+        <span style="color:${inLatest ? 'var(--text)' : inPrev ? 'var(--warn)' : 'var(--danger)'};font-size:11px">${displayVal}</span>
+      </div>`;
+    });
+  });
+
+  panel.innerHTML = html;
 }
 
 function resetApp() {
