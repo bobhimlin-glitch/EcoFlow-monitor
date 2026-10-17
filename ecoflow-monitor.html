@@ -1729,16 +1729,7 @@ function updateDetailTab(which, main, eb1, eb2) {
         <div class="flow-bar-track"><div class="flow-bar-fill out" style="width:${Math.min(100, ebChargeW / maxOut * 100)}%;background:var(--accent2)"></div></div>
         <span class="flow-value" style="color:var(--accent2)">${ebChargeW}W</span>
       </div>` : ''}
-      ${totalPackDsg > 0 ? `
-      <div class="flow-row">
-        <span class="flow-label" style="color:var(--text2)">Total Pack Draw</span>
-        <div class="flow-bar-track"><div class="flow-bar-fill out" style="width:${Math.min(100, totalPackDsg / maxOut * 100)}%;opacity:0.5"></div></div>
-        <span class="flow-value" style="color:var(--text2)">${totalPackDsg}W</span>
-      </div>
-      ${parasitic > 5 ? `
-      <div style="font-size:10px;color:var(--text3);padding:2px 0 4px">
-        DP overhead ~${parasitic}W (inverter + BMS + WiFi)
-      </div>` : ''}` : ''}
+
     </div>
 
     <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;padding:4px 0 8px">Cell Health — Per Pack</div>
