@@ -1671,9 +1671,10 @@ function updateDetailTab(which, main, eb1, eb2) {
   // inv.outputWatts is 0 when inverter is off — use directly, no fallback
   const acOutW = Math.round(main.inv.outputW || 0);
   // EB charging current from slave inputWatts
-  const slave1ChargeW = eb1 ? Math.round(eb1.bms.inputW || 0) : 0;
-  const slave2ChargeW = eb2 ? Math.round(eb2.bms.inputW || 0) : 0;
-  const ebChargeW = slave1ChargeW + slave2ChargeW;
+  // EB charging = sum of cached slave inputWatts (cache survives API rotation)
+  const slave1InputW = eb1 ? Math.round(eb1.bms.inputW || 0) : 0;
+  const slave2InputW = eb2 ? Math.round(eb2.bms.inputW || 0) : 0;
+  const ebChargeW = slave1InputW + slave2InputW;
   // Total pack discharge = sum of all pack outputWatts (includes DP overhead + inverter + house load)
   const masterDsg = Math.round(main.master ? (main.master.outputW || 0) : (main.bms.outputW || 0));
   const slave1Dsg = eb1 ? Math.round(eb1.bms.outputW || 0) : 0;
